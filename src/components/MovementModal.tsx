@@ -26,6 +26,7 @@ interface MovementModalProps {
   products: Product[];
   initialType?: MovementType;
   preselectedProduct?: Product | null;
+  currentUser?: { name: string } | null;
 }
 
 const ENTRY_REASONS: EntryReason[] = [
@@ -57,6 +58,7 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   products,
   initialType = 'IN',
   preselectedProduct = null,
+  currentUser = null,
 }) => {
   const [type, setType] = useState<MovementType>(initialType);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -66,7 +68,7 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   const [reason, setReason] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
   const [contactName, setContactName] = useState('');
-  const [responsible, setResponsible] = useState('Almoxarife / Técnico');
+  const [responsible, setResponsible] = useState(currentUser?.name || 'Almoxarife / Técnico');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -77,6 +79,7 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setType(initialType);
+      setResponsible(currentUser?.name || 'Almoxarife / Técnico');
       const targetProd = preselectedProduct || (products.length > 0 ? products[0] : null);
       if (targetProd) {
         setSelectedProductId(targetProd.id);

@@ -1,24 +1,43 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Product, Movement, MovementType } from './types';
+import { Product, Movement, MovementType, User, WorkOrder } from './types';
 import { Header } from './components/Header';
 import { Navigation, TabType } from './components/Navigation';
 import { InventoryView } from './components/InventoryView';
 import { EntriesView } from './components/EntriesView';
 import { ExitsView } from './components/ExitsView';
+import { WorkOrdersView } from './components/WorkOrdersView';
 import { ProductFormModal } from './components/ProductFormModal';
 import { MovementModal } from './components/MovementModal';
+import { WorkOrderGeneratorModal } from './components/WorkOrderGeneratorModal';
 import { AuditReconcileModal } from './components/AuditReconcileModal';
 import { BackupModal } from './components/BackupModal';
+import { LoginModal } from './components/LoginModal';
+import { UsersManagementModal } from './components/UsersManagementModal';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'estoquepro_cached_db_v1';
+const USER_STORAGE_KEY = 'estoquepro_current_user_v1';
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [usersList, setUsersList] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('inventory');
   const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
+
+  // Authentication & Users state
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem(USER_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
 
   // Modals state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -28,6 +47,7 @@ export default function App() {
   const [movementInitialType, setMovementInitialType] = useState<MovementType>('IN');
   const [movementPreselectedProduct, setMovementPreselectedProduct] = useState<Product | null>(null);
 
+  const [isWorkOrderModalOpen, setIsWorkOrderModalOpen] = useState(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
@@ -45,6 +65,24 @@ export default function App() {
     }, 4000);
   };
 
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } catch {}
+    setIsLoginModalOpen(false);
+    showToast(`Conectado como ${user.name} (${user.role})`, 'success');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    } catch {}
+    showToast('Você saiu do sistema.', 'info');
+    setIsLoginModalOpen(true);
+  };
+
   // Fetch initial data from server
   const loadInventory = useCallback(async () => {
     try {
@@ -54,6 +92,8 @@ export default function App() {
       const data = await res.json();
       setProducts(data.products || []);
       setMovements(data.movements || []);
+      setWorkOrders(data.workOrders || []);
+      if (data.users) setUsersList(data.users);
       setIsOnline(true);
 
       // Cache locally
@@ -71,6 +111,8 @@ export default function App() {
           const data = JSON.parse(cached);
           setProducts(data.products || []);
           setMovements(data.movements || []);
+          setWorkOrders(data.workOrders || []);
+          if (data.users) setUsersList(data.users);
         } catch (e) {
           console.error('Failed to parse cached data');
         }
@@ -83,6 +125,17 @@ export default function App() {
   useEffect(() => {
     loadInventory();
   }, [loadInventory]);
+
+  // Work Order Callback
+  const handleWorkOrderCreated = (newOrder: WorkOrder, updatedProducts: Product[]) => {
+    setWorkOrders((prev) => [newOrder, ...prev]);
+    if (updatedProducts && Array.isArray(updatedProducts)) {
+      setProducts(updatedProducts);
+    }
+    showToast(`O.S. ${newOrder.osNumber} gerada com sucesso! Estoque atualizado.`, 'success');
+    // Refresh full state silently
+    loadInventory();
+  };
 
   // Product CRUD
   const handleSaveProduct = async (formData: any) => {
@@ -388,19 +441,26 @@ export default function App() {
         onNewProduct={handleOpenNewProduct}
         onNewEntry={() => handleOpenNewEntry()}
         onNewExit={() => handleOpenNewExit()}
+        onOpenWorkOrderGenerator={() => setIsWorkOrderModalOpen(true)}
         onOpenAudit={() => setIsAuditModalOpen(true)}
+        onOpenUsersManagement={() => setIsUsersModalOpen(true)}
+        onOpenLogin={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
+        currentUser={currentUser}
         isOnline={isOnline}
         totalProducts={products.length}
       />
 
-      {/* Navigation Tabs (Inventário Geral, Histórico de Entradas, Histórico de Saídas) */}
+      {/* Navigation Tabs (Inventário Geral, Ordens de Serviço, Histórico de Entradas, Histórico de Saídas) */}
       <Navigation
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         onOpenNewProduct={handleOpenNewProduct}
+        onOpenWorkOrderGenerator={() => setIsWorkOrderModalOpen(true)}
         totalProducts={products.length}
         totalEntries={entriesCount}
         totalExits={exitsCount}
+        totalWorkOrders={workOrders.length}
         alertCount={alertCount}
       />
 
@@ -428,6 +488,15 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'work-orders' && (
+              <WorkOrdersView
+                workOrders={workOrders}
+                products={products}
+                onOpenGenerator={() => setIsWorkOrderModalOpen(true)}
+                canManage={currentUser?.role !== 'CONSULTA'}
+              />
+            )}
+
             {activeTab === 'entries' && (
               <EntriesView
                 movements={movements}
@@ -449,6 +518,17 @@ export default function App() {
         )}
       </main>
 
+      {/* Modal: Gerador de Ordem de Serviço (O.S.) & Requisição Multi-Item */}
+      <WorkOrderGeneratorModal
+        isOpen={isWorkOrderModalOpen}
+        onClose={() => setIsWorkOrderModalOpen(false)}
+        products={products}
+        currentUser={currentUser}
+        users={usersList}
+        onWorkOrderCreated={handleWorkOrderCreated}
+        onRequestOpenLogin={() => setIsLoginModalOpen(true)}
+      />
+
       {/* Modal: Product Registration & Edit */}
       <ProductFormModal
         isOpen={isProductModalOpen}
@@ -466,6 +546,7 @@ export default function App() {
         products={products}
         initialType={movementInitialType}
         preselectedProduct={movementPreselectedProduct}
+        currentUser={currentUser}
       />
 
       {/* Modal: Physical Audit / Balance Reconciliation */}
@@ -484,6 +565,21 @@ export default function App() {
         movements={movements}
         onImportBackup={handleImportBackup}
         onResetSample={handleResetSample}
+      />
+
+      {/* Modal: User Authentication & Registration */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        canClose={currentUser !== null}
+      />
+
+      {/* Modal: Users Management (Admin) */}
+      <UsersManagementModal
+        isOpen={isUsersModalOpen}
+        onClose={() => setIsUsersModalOpen(false)}
+        currentUser={currentUser}
       />
     </div>
   );

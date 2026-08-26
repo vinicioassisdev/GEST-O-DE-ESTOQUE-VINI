@@ -2,6 +2,38 @@ export type MovementType = 'IN' | 'OUT' | 'ADJUST';
 
 export type MaintenanceCriticality = 'HIGH' | 'MEDIUM' | 'LOW';
 
+export interface WorkOrderItem {
+  productId: string;
+  productCode: string;
+  productName: string;
+  quantity: number;
+  unit: ProductUnit | string;
+  unitPrice: number;
+  totalPrice: number;
+  currentStock: number;
+}
+
+export interface WorkOrder {
+  id: string;
+  osNumber: string; // Ex: OS-2026-0001
+  date: string;
+  serviceType: 'CORRETIVA' | 'PREVENTIVA' | 'PREDITIVA' | 'REFORMA' | 'EMERGENCIAL' | 'INSTALACAO' | 'OUTROS';
+  application: string; // Aplicação / Equipamento / TAG
+  equipmentTag?: string; // TAG da máquina
+  requesterName: string; // Ex: Heliel
+  requesterRole?: string; // Mecânico / Técnico
+  authorizedBy: string; // Supervisor / Almoxarife que autorizou
+  warehouseKeeper?: string; // Almoxarife que fez a entrega
+  sector?: string; // Setor / Oficina
+  priority: 'ALTA' | 'MEDIA' | 'BAIXA' | 'URGENTE';
+  items: WorkOrderItem[];
+  totalCost: number;
+  totalQuantity: number;
+  status: 'CONCLUIDA' | 'PENDENTE' | 'CANCELADA';
+  notes?: string;
+  createdAt: string;
+}
+
 export type EntryReason = 
   | 'Recebimento de Compra / NF'
   | 'Compra / Reposição de Sobressalentes'
@@ -97,5 +129,25 @@ export interface StockAuditItem {
   countedStock: number;
   difference: number;
   costDifference: number;
+}
+
+export type UserRole = 'ADMIN' | 'ALMOXARIFE' | 'PCM_ENG' | 'MECANICO' | 'CONSULTA';
+
+export interface User {
+  id: string;
+  name: string;
+  username: string;
+  email?: string;
+  role: UserRole;
+  active: boolean;
+  avatarColor?: string;
+  department?: string;
+  createdAt: string;
+  lastLogin?: string;
+}
+
+export interface UserCredentials {
+  username: string;
+  password: string;
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Product, Movement, MovementType, User, WorkOrder, OperationalArea } from './types';
+import { Product, Movement, MovementType, User, WorkOrder, OperationalArea, InstallationType } from './types';
 import { Header } from './components/Header';
 import { Navigation, TabType } from './components/Navigation';
 import { InventoryView } from './components/InventoryView';
@@ -24,6 +24,7 @@ export default function App() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [areas, setAreas] = useState<OperationalArea[]>([]);
+  const [installationTypes, setInstallationTypes] = useState<InstallationType[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('inventory');
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +98,7 @@ export default function App() {
       setMovements(data.movements || []);
       setWorkOrders(data.workOrders || []);
       if (data.areas) setAreas(data.areas);
+      if (data.installationTypes) setInstallationTypes(data.installationTypes);
       if (data.users) setUsersList(data.users);
       setIsOnline(true);
 
@@ -117,6 +119,7 @@ export default function App() {
           setMovements(data.movements || []);
           setWorkOrders(data.workOrders || []);
           if (data.areas) setAreas(data.areas);
+          if (data.installationTypes) setInstallationTypes(data.installationTypes);
           if (data.users) setUsersList(data.users);
         } catch (e) {
           console.error('Failed to parse cached data');
@@ -655,14 +658,16 @@ export default function App() {
         currentUser={currentUser}
       />
 
-      {/* Modal: Áreas e Locais Operacionais (ETA, ETE, etc.) */}
+      {/* Modal: Cadastro e Manutenção de Instalações, Locais, Tipos e Siglas */}
       <AreasManagementModal
         isOpen={isAreasModalOpen}
         onClose={() => setIsAreasModalOpen(false)}
         areas={areas}
-        onAreaCreated={handleAreaCreated}
-        onAreaUpdated={handleAreaUpdated}
-        onAreaDeleted={handleAreaDeleted}
+        installationTypes={installationTypes}
+        currentUser={currentUser}
+        onAreasUpdated={(updatedAreas) => setAreas(updatedAreas)}
+        onInstallationTypesUpdated={(updatedTypes) => setInstallationTypes(updatedTypes)}
+        showToast={showToast}
       />
     </div>
   );

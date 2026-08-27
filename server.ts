@@ -38,10 +38,22 @@ export interface UserRecord {
   lastLogin?: string;
 }
 
+export interface InstallationTypeRecord {
+  id: string;
+  name: string;
+  codePrefix: string;
+  icon?: string;
+  color?: string;
+  description?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface OperationalAreaRecord {
   id: string;
   name: string;
-  type: 'SETOR' | 'LINHA' | 'GALPAO' | 'UNIDADE' | 'ESTACAO' | 'OFICINA' | 'ETA' | 'ETE' | 'POCO' | 'OUTROS';
+  type: string; // References InstallationType ID or name
   code?: string;
   description?: string;
   active: boolean;
@@ -93,6 +105,7 @@ interface DBStructure {
   }>;
   users: Array<UserRecord>;
   areas: Array<OperationalAreaRecord>;
+  installationTypes: Array<InstallationTypeRecord>;
   workOrders: Array<{
     id: string;
     osNumber: string;
@@ -139,6 +152,79 @@ interface DBStructure {
   }>;
 }
 
+const defaultInstallationTypes: InstallationTypeRecord[] = [
+  {
+    id: 'type-setor',
+    name: 'Setor / Departamento',
+    codePrefix: 'SET',
+    icon: '🏢',
+    color: 'blue',
+    description: 'Divisão administrativa, operacional ou de processos',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'type-linha',
+    name: 'Linha de Produção / Máquina',
+    codePrefix: 'LIN',
+    icon: '⚙️',
+    color: 'indigo',
+    description: 'Linha contínua, esteira, conjunto de máquinas ou célula produtiva',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'type-galpao',
+    name: 'Galpão / Armazém',
+    codePrefix: 'GALP',
+    icon: '📦',
+    color: 'emerald',
+    description: 'Armazém, depósito, pavilhão de estocagem ou almoxarifado',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'type-oficina',
+    name: 'Oficina / Manutenção',
+    codePrefix: 'OFI',
+    icon: '🛠️',
+    color: 'amber',
+    description: 'Bancadas, usinagem, elétrica ou mecânica de apoio',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'type-unidade',
+    name: 'Unidade / Filial / Fábrica',
+    codePrefix: 'UND',
+    icon: '🏭',
+    color: 'purple',
+    description: 'Unidade fabril, filial regional ou planta industrial',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'type-estacao',
+    name: 'Estação / Usina / Instalação',
+    codePrefix: 'EST',
+    icon: '⚡',
+    color: 'cyan',
+    description: 'Subestação, casa de força, compressores ou utilidades',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'type-outros',
+    name: 'Outro Local Operacional',
+    codePrefix: 'LOC',
+    icon: '📍',
+    color: 'slate',
+    description: 'Instalação diversa ou ponto operacional customizado',
+    active: true,
+    createdAt: new Date().toISOString(),
+  },
+];
+
 const initialSeedData: DBStructure = {
   users: [
     {
@@ -171,6 +257,7 @@ const initialSeedData: DBStructure = {
   movements: [],
   workOrders: [],
   areas: [],
+  installationTypes: defaultInstallationTypes,
 };
 
 // Helper to strip passwordHash from user object
@@ -192,6 +279,9 @@ function readDB(): DBStructure {
     if (!data.movements || !Array.isArray(data.movements)) data.movements = [];
     if (!data.workOrders || !Array.isArray(data.workOrders)) data.workOrders = [];
     if (!data.areas || !Array.isArray(data.areas)) data.areas = [];
+    if (!data.installationTypes || !Array.isArray(data.installationTypes) || data.installationTypes.length === 0) {
+      data.installationTypes = defaultInstallationTypes;
+    }
     if (!data.users || !Array.isArray(data.users) || data.users.length === 0) {
       data.users = initialSeedData.users;
     }
@@ -448,12 +538,111 @@ app.get('/api/inventory', (req, res) => {
     movements: db.movements,
     workOrders: db.workOrders || [],
     areas: db.areas || [],
+    installationTypes: db.installationTypes || defaultInstallationTypes,
     users: db.users.map(sanitizeUser),
   });
 });
 
 // ==========================================
-// OPERATIONAL AREAS (LOCAIS / ESTAÇÕES / POÇOS) ROUTES
+// INSTALLATION TYPES (TIPOS DE INSTALAÇÃO & SIGLAS) ROUTES
+// ==========================================
+
+// GET all installation types
+app.get('/api/installation-types', (req, res) => {
+  const db = readDB();
+  res.json({ installationTypes: db.installationTypes || defaultInstallationTypes });
+});
+
+// POST Create new installation type
+app.post('/api/installation-types', (req, res) => {
+  const { name, codePrefix, icon, color, description } = req.body;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Nome do tipo de instalação é obrigatório (ex: Linha de Montagem, Caldeiraria).' });
+  }
+
+  const cleanName = String(name).trim();
+  const db = readDB();
+  if (!db.installationTypes) db.installationTypes = [...defaultInstallationTypes];
+
+  if (db.installationTypes.some((t) => t.name.toLowerCase() === cleanName.toLowerCase())) {
+    return res.status(409).json({ error: `Já existe um tipo de instalação com o nome "${cleanName}".` });
+  }
+
+  const now = new Date().toISOString();
+  const cleanPrefix = (codePrefix?.trim() || cleanName.slice(0, 3)).toUpperCase();
+
+  const newType: InstallationTypeRecord = {
+    id: `type-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    name: cleanName,
+    codePrefix: cleanPrefix,
+    icon: icon?.trim() || '📍',
+    color: color?.trim() || 'blue',
+    description: description?.trim() || undefined,
+    active: true,
+    createdAt: now,
+  };
+
+  db.installationTypes.push(newType);
+  writeDB(db);
+
+  res.status(201).json({ success: true, installationType: newType, installationTypes: db.installationTypes });
+});
+
+// PUT Update installation type
+app.put('/api/installation-types/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, codePrefix, icon, color, description, active } = req.body;
+
+  const db = readDB();
+  if (!db.installationTypes) db.installationTypes = [...defaultInstallationTypes];
+  const typeItem = db.installationTypes.find((t) => t.id === id);
+
+  if (!typeItem) {
+    return res.status(404).json({ error: 'Tipo de instalação não encontrado.' });
+  }
+
+  if (name && String(name).trim()) {
+    const cleanName = String(name).trim();
+    const duplicate = db.installationTypes.find((t) => t.id !== id && t.name.toLowerCase() === cleanName.toLowerCase());
+    if (duplicate) {
+      return res.status(409).json({ error: `Já existe outro tipo de instalação com o nome "${cleanName}".` });
+    }
+    typeItem.name = cleanName;
+  }
+
+  if (codePrefix !== undefined) {
+    typeItem.codePrefix = String(codePrefix).trim().toUpperCase();
+  }
+  if (icon !== undefined) typeItem.icon = String(icon).trim() || '📍';
+  if (color !== undefined) typeItem.color = String(color).trim() || 'blue';
+  if (description !== undefined) typeItem.description = description?.trim() || undefined;
+  if (active !== undefined) typeItem.active = Boolean(active);
+  typeItem.updatedAt = new Date().toISOString();
+
+  writeDB(db);
+  res.json({ success: true, installationType: typeItem, installationTypes: db.installationTypes });
+});
+
+// DELETE installation type
+app.delete('/api/installation-types/:id', (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  if (!db.installationTypes) db.installationTypes = [...defaultInstallationTypes];
+  const index = db.installationTypes.findIndex((t) => t.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Tipo de instalação não encontrado.' });
+  }
+
+  const removed = db.installationTypes.splice(index, 1)[0];
+  writeDB(db);
+
+  res.json({ success: true, removed, installationTypes: db.installationTypes });
+});
+
+// ==========================================
+// OPERATIONAL AREAS (LOCAIS & ESTRUTURA) ROUTES
 // ==========================================
 
 // GET all areas
@@ -479,13 +668,11 @@ app.post('/api/areas', (req, res) => {
   }
 
   const now = new Date().toISOString();
-  const validTypes = ['SETOR', 'LINHA', 'GALPAO', 'UNIDADE', 'ESTACAO', 'OFICINA', 'ETA', 'ETE', 'POCO', 'OUTROS'];
-  const assignedType = (type && validTypes.includes(type) ? type : 'SETOR') as OperationalAreaRecord['type'];
 
   const newArea: OperationalAreaRecord = {
     id: `area-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
     name: cleanName,
-    type: assignedType,
+    type: (type && String(type).trim()) ? String(type).trim() : 'SETOR',
     code: code?.trim()?.toUpperCase() || undefined,
     description: description?.trim() || undefined,
     active: true,
@@ -520,11 +707,8 @@ app.put('/api/areas/:id', (req, res) => {
     area.name = cleanName;
   }
 
-  if (type) {
-    const validTypes = ['SETOR', 'LINHA', 'GALPAO', 'UNIDADE', 'ESTACAO', 'OFICINA', 'ETA', 'ETE', 'POCO', 'OUTROS'];
-    if (validTypes.includes(type)) {
-      area.type = type as OperationalAreaRecord['type'];
-    }
+  if (type !== undefined && String(type).trim()) {
+    area.type = String(type).trim();
   }
 
   if (code !== undefined) area.code = code?.trim()?.toUpperCase() || undefined;
@@ -1316,6 +1500,7 @@ app.post('/api/inventory/reset-sample', (req, res) => {
     movements: [],
     workOrders: [],
     areas: [],
+    installationTypes: defaultInstallationTypes,
   };
   writeDB(cleanDB);
   res.json({
@@ -1324,6 +1509,7 @@ app.post('/api/inventory/reset-sample', (req, res) => {
     movements: [],
     workOrders: [],
     areas: [],
+    installationTypes: defaultInstallationTypes,
     users: initialSeedData.users.map(sanitizeUser),
   });
 });
@@ -1335,12 +1521,14 @@ app.get('/api/backup', (req, res) => {
     products: db.products,
     movements: db.movements,
     workOrders: db.workOrders || [],
+    areas: db.areas || [],
+    installationTypes: db.installationTypes || defaultInstallationTypes,
     users: db.users.map(sanitizeUser),
   });
 });
 
 app.post('/api/backup', (req, res) => {
-  const { products, movements, workOrders, users } = req.body;
+  const { products, movements, workOrders, users, areas, installationTypes } = req.body;
   if (!Array.isArray(products) || !Array.isArray(movements)) {
     return res.status(400).json({ error: 'Formato de backup inválido.' });
   }
@@ -1350,12 +1538,21 @@ app.post('/api/backup', (req, res) => {
     products,
     movements,
     workOrders: Array.isArray(workOrders) ? workOrders : existingDB.workOrders || [],
-    areas: Array.isArray(req.body.areas) && req.body.areas.length > 0 ? req.body.areas : (existingDB.areas || initialSeedData.areas),
+    areas: Array.isArray(areas) ? areas : (existingDB.areas || initialSeedData.areas),
+    installationTypes: Array.isArray(installationTypes) && installationTypes.length > 0 ? installationTypes : (existingDB.installationTypes || defaultInstallationTypes),
     users: Array.isArray(users) && users.length > 0 ? users : existingDB.users,
   };
 
   writeDB(cleanDB);
-  res.json({ success: true, countProducts: products.length, countMovements: movements.length, countWorkOrders: cleanDB.workOrders.length, countUsers: cleanDB.users.length });
+  res.json({
+    success: true,
+    countProducts: products.length,
+    countMovements: movements.length,
+    countWorkOrders: cleanDB.workOrders.length,
+    countAreas: cleanDB.areas.length,
+    countInstallationTypes: cleanDB.installationTypes.length,
+    countUsers: cleanDB.users.length,
+  });
 });
 
 // Vite & Static server setup

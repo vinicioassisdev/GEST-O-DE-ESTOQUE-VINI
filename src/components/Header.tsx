@@ -210,9 +210,9 @@ export const Header: React.FC<HeaderProps> = ({
                         <MapPin className="w-4 h-4 text-emerald-600" />
                         <div>
                           <div className="font-semibold text-slate-900 dark:text-slate-100">
-                            Locais & Áreas Operacionais
+                            Instalações, Tipos & Siglas
                           </div>
-                          <div className="text-[10px] text-slate-400">ETA, ETE, Estações, Poços</div>
+                          <div className="text-[10px] text-slate-400">Setores, Linhas, Galpões e Códigos</div>
                         </div>
                       </button>
                     )}

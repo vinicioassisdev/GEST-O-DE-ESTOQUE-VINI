@@ -2,23 +2,25 @@ export type MovementType = 'IN' | 'OUT' | 'ADJUST';
 
 export type MaintenanceCriticality = 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type OperationalAreaType =
-  | 'SETOR'
-  | 'LINHA'
-  | 'GALPAO'
-  | 'UNIDADE'
-  | 'ESTACAO'
-  | 'OFICINA'
-  | 'ETA'
-  | 'ETE'
-  | 'POCO'
-  | 'OUTROS';
+export type OperationalAreaType = string;
+
+export interface InstallationType {
+  id: string;
+  name: string; // Ex: 'Setor / Departamento', 'Linha de Produção', 'Galpão / Armazém'
+  codePrefix: string; // Ex: 'SET', 'LIN', 'GALP', 'OFI'
+  icon?: string; // Emoji or icon indicator: 🏢, ⚙️, 📦, 🏭, ⚡, 🛠️, 📍
+  color?: string; // blue, indigo, emerald, purple, cyan, amber, teal, sky, slate, red, orange
+  description?: string;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface OperationalArea {
   id: string;
   name: string; // Ex: 'Linha 01', 'Galpão A', 'Oficina Central', 'Setor de Envase'
-  type: OperationalAreaType;
-  code?: string; // Ex: 'LIN-01', 'GALP-A', 'OFI-01'
+  type: string; // Tipo de Instalação (ID ou chave do tipo)
+  code?: string; // Sigla / Código identificador (Ex: 'LIN-01', 'GALP-A', 'OFI-01')
   description?: string;
   active: boolean;
   createdAt: string;

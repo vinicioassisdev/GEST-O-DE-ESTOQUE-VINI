@@ -2,11 +2,37 @@ export type MovementType = 'IN' | 'OUT' | 'ADJUST';
 
 export type MaintenanceCriticality = 'HIGH' | 'MEDIUM' | 'LOW';
 
+export type OperationalAreaType = 'ETA' | 'ETE' | 'EETE' | 'EEAB' | 'POCO' | 'DESSALINIZADOR' | 'OFICINA' | 'OUTROS';
+
+export interface OperationalArea {
+  id: string;
+  name: string; // Ex: 'ETA PIRAUNA', 'ETE CACHORRO', 'EETE CACHORRO', 'EEAB BOLDRO', 'DESSALINIZADOR', 'POÇO 01'
+  type: OperationalAreaType;
+  code?: string; // Ex: 'ETA-PIR', 'ETE-CAC', 'EEAB-BOL'
+  description?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface WorkOrderReturnItem {
+  id: string;
+  productId: string;
+  productCode: string;
+  productName: string;
+  quantityReturned: number;
+  returnedBy: string;
+  reason?: string;
+  timestamp: string;
+}
+
 export interface WorkOrderItem {
   productId: string;
   productCode: string;
   productName: string;
-  quantity: number;
+  quantity: number; // Quantidade solicitada / liberada na Guia de O.S.
+  dischargedQuantity?: number; // Quantidade efetivamente baixada / retirada do estoque
+  returnedQuantity?: number; // Quantidade devolvida ao almoxarifado (sobra)
   unit: ProductUnit | string;
   unitPrice: number;
   totalPrice: number;
@@ -20,6 +46,7 @@ export interface WorkOrder {
   serviceType: 'CORRETIVA' | 'PREVENTIVA' | 'PREDITIVA' | 'REFORMA' | 'EMERGENCIAL' | 'INSTALACAO' | 'OUTROS';
   application: string; // Aplicação / Equipamento / TAG
   equipmentTag?: string; // TAG da máquina
+  operationalArea?: string; // Local / Área Operacional (Ex: ETA PIRAUNA, ETE CACHORRO, POÇO 01)
   requesterName: string; // Ex: Heliel
   requesterRole?: string; // Mecânico / Técnico
   authorizedBy: string; // Supervisor / Almoxarife que autorizou
@@ -29,7 +56,10 @@ export interface WorkOrder {
   items: WorkOrderItem[];
   totalCost: number;
   totalQuantity: number;
-  status: 'CONCLUIDA' | 'PENDENTE' | 'CANCELADA';
+  status: 'ABERTA' | 'PARCIAL' | 'CONCLUIDA' | 'CANCELADA'; // ABERTA = Materiais solicitados/liberados na Guia (aguardando baixa física)
+  dischargedAt?: string; // Data da baixa
+  dischargedBy?: string; // Responsável que realizou a baixa
+  returns?: WorkOrderReturnItem[]; // Histórico de sobras devolvidas ao almoxarifado
   notes?: string;
   createdAt: string;
 }
@@ -80,8 +110,9 @@ export interface Product {
   imageUrl?: string; // Foto da peça
   category: string; // Mecânica, Elétrica, Pneumática, etc.
   unit: ProductUnit;
-  equipmentTag?: string; // TAG da máquina/equipamento onde é aplicada (ex: Torno CNC-01, Caldeira B-2)
-  criticality?: MaintenanceCriticality; // HIGH = Crítica (Parada de Fábrica), MEDIUM = Importante, LOW = Baixa
+  equipmentTag?: string; // TAG do equipamento/conjunto operacional (ex: BOM-01, MTR-02, DOS-01)
+  operationalArea?: string; // Área/Estação/Poço de destinação principal (Ex: ETA PIRAUNA, ETE CACHORRO, POÇO 01)
+  criticality?: MaintenanceCriticality; // HIGH = Crítica (Parada de Estação / Falta d'Água), MEDIUM = Importante, LOW = Baixa
   currentStock: number;
   minStock: number; // Estoque de segurança / Ponto de pedido
   maxStock?: number;
@@ -105,7 +136,8 @@ export interface Movement {
   totalPrice: number; // Custo total aplicado
   reason: string; // Motivo da manutenção / entrada
   documentNumber?: string; // Nº da Ordem de Serviço (O.S.) ou Nota Fiscal de Compra
-  contactName?: string; // TAG / Máquina / Setor de destino ou Fornecedor de origem
+  contactName?: string; // TAG / Equipamento / Estação de destino ou Fornecedor de origem
+  operationalArea?: string; // Local / Área Operacional de aplicação
   responsible: string; // Mecânico / Eletricista / Almoxarife requisitante
   notes?: string;
   timestamp: string;

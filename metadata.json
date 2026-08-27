@@ -1,6 +1,6 @@
 {
-  "name": "Controle de Estoque Profissional",
-  "description": "Sistema de controle de almoxarifado e estoque para manutenção industrial com cadastro de sobressalentes, TAGs de máquinas, leitor de código de barras, fotos de itens, histórico de entradas e baixas em O.S.",
+  "name": "Controle de Estoque PRO",
+  "description": "Sistema de controle de almoxarifado, sobressalentes e manutenção operacional para saneamento e distribuição de água (ETAs, ETEs, Estações Elevatórias, Poços e Dessalinizadores).",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

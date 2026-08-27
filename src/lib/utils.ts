@@ -95,7 +95,7 @@ export function getCriticalityInfo(criticality?: MaintenanceCriticality): {
   switch (criticality) {
     case 'HIGH':
       return {
-        label: 'Alta - Peça Crítica (Parada de Fábrica)',
+        label: 'Alta - Peça Crítica (Risco de Falta d\'Água / Parada de Estação)',
         shortLabel: 'Crítica A',
         color: 'text-red-700 dark:text-red-300',
         bg: 'bg-red-100 dark:bg-red-950/70',

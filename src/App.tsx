@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Product, Movement, MovementType, User, WorkOrder } from './types';
+import { Product, Movement, MovementType, User, WorkOrder, OperationalArea } from './types';
 import { Header } from './components/Header';
 import { Navigation, TabType } from './components/Navigation';
 import { InventoryView } from './components/InventoryView';
@@ -13,6 +13,7 @@ import { AuditReconcileModal } from './components/AuditReconcileModal';
 import { BackupModal } from './components/BackupModal';
 import { LoginModal } from './components/LoginModal';
 import { UsersManagementModal } from './components/UsersManagementModal';
+import { AreasManagementModal } from './components/AreasManagementModal';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'estoquepro_cached_db_v1';
@@ -22,6 +23,7 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [areas, setAreas] = useState<OperationalArea[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('inventory');
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +40,7 @@ export default function App() {
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
+  const [isAreasModalOpen, setIsAreasModalOpen] = useState(false);
 
   // Modals state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -93,6 +96,7 @@ export default function App() {
       setProducts(data.products || []);
       setMovements(data.movements || []);
       setWorkOrders(data.workOrders || []);
+      if (data.areas) setAreas(data.areas);
       if (data.users) setUsersList(data.users);
       setIsOnline(true);
 
@@ -112,6 +116,7 @@ export default function App() {
           setProducts(data.products || []);
           setMovements(data.movements || []);
           setWorkOrders(data.workOrders || []);
+          if (data.areas) setAreas(data.areas);
           if (data.users) setUsersList(data.users);
         } catch (e) {
           console.error('Failed to parse cached data');
@@ -126,6 +131,22 @@ export default function App() {
     loadInventory();
   }, [loadInventory]);
 
+  // Operational Area Handlers
+  const handleAreaCreated = (newArea: OperationalArea) => {
+    setAreas((prev) => [...prev, newArea]);
+    showToast(`Local "${newArea.name}" cadastrado com sucesso!`, 'success');
+  };
+
+  const handleAreaUpdated = (updatedArea: OperationalArea) => {
+    setAreas((prev) => prev.map((a) => (a.id === updatedArea.id ? updatedArea : a)));
+    showToast(`Local "${updatedArea.name}" atualizado!`, 'success');
+  };
+
+  const handleAreaDeleted = (deletedId: string) => {
+    setAreas((prev) => prev.filter((a) => a.id !== deletedId));
+    showToast('Local operacional removido.', 'info');
+  };
+
   // Work Order Callback
   const handleWorkOrderCreated = (newOrder: WorkOrder, updatedProducts: Product[]) => {
     setWorkOrders((prev) => [newOrder, ...prev]);
@@ -135,6 +156,38 @@ export default function App() {
     showToast(`O.S. ${newOrder.osNumber} gerada com sucesso! Estoque atualizado.`, 'success');
     // Refresh full state silently
     loadInventory();
+  };
+
+  // Return Unused Material from Work Order (Devolução de Sobra ao Almoxarifado)
+  const handleReturnWorkOrderItem = async (
+    workOrderId: string,
+    returnData: {
+      productId: string;
+      quantity: number;
+      returnedBy: string;
+      reason: string;
+      notes?: string;
+    }
+  ) => {
+    try {
+      const res = await fetch(`/api/work-orders/${workOrderId}/return`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(returnData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Erro ao devolver sobra da O.S.');
+      }
+      const data = await res.json();
+      if (data.workOrders) setWorkOrders(data.workOrders);
+      if (data.products) setProducts(data.products);
+      if (data.movements) setMovements(data.movements);
+      showToast(data.message || 'Sobra de material devolvida ao estoque!', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Erro ao processar devolução.', 'error');
+      throw err;
+    }
   };
 
   // Product CRUD
@@ -444,6 +497,7 @@ export default function App() {
         onOpenWorkOrderGenerator={() => setIsWorkOrderModalOpen(true)}
         onOpenAudit={() => setIsAuditModalOpen(true)}
         onOpenUsersManagement={() => setIsUsersModalOpen(true)}
+        onOpenAreasManagement={() => setIsAreasModalOpen(true)}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
         currentUser={currentUser}
@@ -492,7 +546,11 @@ export default function App() {
               <WorkOrdersView
                 workOrders={workOrders}
                 products={products}
+                areas={areas}
+                currentUser={currentUser}
                 onOpenGenerator={() => setIsWorkOrderModalOpen(true)}
+                onOpenAreasManagement={() => setIsAreasModalOpen(true)}
+                onConfirmReturn={handleReturnWorkOrderItem}
                 canManage={currentUser?.role !== 'CONSULTA'}
               />
             )}
@@ -523,6 +581,8 @@ export default function App() {
         isOpen={isWorkOrderModalOpen}
         onClose={() => setIsWorkOrderModalOpen(false)}
         products={products}
+        areas={areas}
+        onOpenAreasManagement={() => setIsAreasModalOpen(true)}
         currentUser={currentUser}
         users={usersList}
         onWorkOrderCreated={handleWorkOrderCreated}
@@ -544,6 +604,7 @@ export default function App() {
         onClose={() => setIsMovementModalOpen(false)}
         onSave={handleSaveMovement}
         products={products}
+        workOrders={workOrders}
         initialType={movementInitialType}
         preselectedProduct={movementPreselectedProduct}
         currentUser={currentUser}
@@ -580,6 +641,16 @@ export default function App() {
         isOpen={isUsersModalOpen}
         onClose={() => setIsUsersModalOpen(false)}
         currentUser={currentUser}
+      />
+
+      {/* Modal: Áreas e Locais Operacionais (ETA, ETE, etc.) */}
+      <AreasManagementModal
+        isOpen={isAreasModalOpen}
+        onClose={() => setIsAreasModalOpen(false)}
+        areas={areas}
+        onAreaCreated={handleAreaCreated}
+        onAreaUpdated={handleAreaUpdated}
+        onAreaDeleted={handleAreaDeleted}
       />
     </div>
   );

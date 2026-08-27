@@ -190,17 +190,18 @@ export const AuditReconcileModal: React.FC<AuditReconcileModalProps> = ({
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">
                           {product.code}
                         </span>
-                        <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                        <span className="font-bold text-sm text-slate-900 dark:text-slate-100 break-words">
                           {product.name}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
                         <span>Categoria: {product.category}</span>
                         {product.location && <span>• Local: {product.location}</span>}
+                        {product.supplier && <span>• Fornecedor: {product.supplier}</span>}
                         <span>• Custo: {formatCurrency(product.costPrice)}</span>
                       </div>
                     </div>

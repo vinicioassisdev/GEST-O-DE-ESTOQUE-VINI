@@ -15,26 +15,69 @@ import {
   Package,
   Cpu,
   DollarSign,
+  MapPin,
+  Map,
+  RotateCcw,
+  History,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowUpRight,
+  Ban,
 } from 'lucide-react';
-import { WorkOrder, Product } from '../types';
+import { WorkOrder, Product, OperationalArea, User as AppUser } from '../types';
 import { formatCurrency, formatDateTime } from '../lib/utils';
 import { generateWorkOrderPDF } from '../lib/pdfGenerator';
+import { WorkOrderReturnModal } from './WorkOrderReturnModal';
+import { WorkOrderDischargeModal } from './WorkOrderDischargeModal';
 
 interface WorkOrdersViewProps {
   workOrders: WorkOrder[];
   products: Product[];
+  areas?: OperationalArea[];
+  currentUser?: AppUser | null;
   onOpenGenerator: () => void;
+  onOpenAreasManagement?: () => void;
+  onConfirmReturn?: (
+    workOrderId: string,
+    returnData: {
+      productId: string;
+      quantity: number;
+      returnedBy: string;
+      reason: string;
+      notes?: string;
+    }
+  ) => Promise<void>;
+  onConfirmDischarge?: (
+    workOrderId: string,
+    dischargeData: {
+      itemsToDischarge: Array<{ productId: string; quantity: number }>;
+      dischargedBy: string;
+      notes?: string;
+    }
+  ) => Promise<void>;
+  onCancelWorkOrder?: (workOrderId: string, reason?: string) => Promise<void>;
   canManage: boolean;
 }
 
 export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
   workOrders,
+  products,
+  areas = [],
+  currentUser = null,
   onOpenGenerator,
+  onOpenAreasManagement,
+  onConfirmReturn,
+  onConfirmDischarge,
+  onCancelWorkOrder,
   canManage,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedServiceType, setSelectedServiceType] = useState<string>('ALL');
+  const [selectedArea, setSelectedArea] = useState<string>('ALL');
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(null);
+  const [returnModalWorkOrder, setReturnModalWorkOrder] = useState<WorkOrder | null>(null);
+  const [dischargeModalWorkOrder, setDischargeModalWorkOrder] = useState<WorkOrder | null>(null);
 
   // Filtered list
   const filteredOrders = useMemo(() => {
@@ -43,14 +86,18 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
         wo.osNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         wo.requesterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         wo.application.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (wo.operationalArea && wo.operationalArea.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (wo.equipmentTag && wo.equipmentTag.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (wo.authorizedBy && wo.authorizedBy.toLowerCase().includes(searchTerm.toLowerCase())) ||
         wo.items.some((it) => it.productName.toLowerCase().includes(searchTerm.toLowerCase()) || it.productCode.toLowerCase().includes(searchTerm.toLowerCase()));
 
+      const status = wo.status || 'CONCLUIDA';
+      const matchStatus = selectedStatus === 'ALL' || status === selectedStatus;
       const matchType = selectedServiceType === 'ALL' || wo.serviceType === selectedServiceType;
-      return matchSearch && matchType;
+      const matchArea = selectedArea === 'ALL' || wo.operationalArea === selectedArea;
+      return matchSearch && matchStatus && matchType && matchArea;
     });
-  }, [workOrders, searchTerm, selectedServiceType]);
+  }, [workOrders, searchTerm, selectedStatus, selectedServiceType, selectedArea]);
 
   // Metrics
   const distinctRequesters = useMemo(() => {
@@ -58,13 +105,56 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
     return setReq.size;
   }, [workOrders]);
 
+  const openOrdersCount = useMemo(() => {
+    return workOrders.filter((w) => (w.status || 'CONCLUIDA') === 'ABERTA' || (w.status || 'CONCLUIDA') === 'PARCIAL').length;
+  }, [workOrders]);
+
   const totalPartsDeducted = useMemo(() => {
-    return workOrders.reduce((acc, curr) => acc + (curr.totalQuantity || curr.items.reduce((s, i) => s + i.quantity, 0)), 0);
+    return workOrders.reduce((acc, curr) => {
+      // Sum discharged quantities
+      const discharged = curr.items.reduce((s, i) => s + (i.dischargedQuantity !== undefined ? i.dischargedQuantity : i.quantity), 0);
+      return acc + discharged;
+    }, 0);
   }, [workOrders]);
 
   const totalCostApplied = useMemo(() => {
     return workOrders.reduce((acc, curr) => acc + (curr.totalCost || 0), 0);
   }, [workOrders]);
+
+  const getStatusBadge = (status?: string) => {
+    const s = status || 'CONCLUIDA';
+    switch (s) {
+      case 'ABERTA':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span>ABERTA (Aguardando Baixa)</span>
+          </span>
+        );
+      case 'PARCIAL':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <span>BAIXA PARCIAL</span>
+          </span>
+        );
+      case 'CONCLUIDA':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            <span>CONCLUÍDA</span>
+          </span>
+        );
+      case 'CANCELADA':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
+            CANCELADA
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -81,20 +171,33 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
             Ordens de Serviço & Requisições de Peças
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Geração de O.S., baixa simultânea no estoque, controle financeiro para o almoxarife/ADM e emissão de PDF para o chão de fábrica
+            Geração de O.S., baixa simultânea no estoque, controle financeiro para almoxarifado/engenharia e emissão de via de campo para as estações e redes
           </p>
         </div>
 
-        {canManage && (
-          <button
-            type="button"
-            onClick={onOpenGenerator}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Gerar Nova Ordem de Serviço</span>
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {onOpenAreasManagement && (
+            <button
+              type="button"
+              onClick={onOpenAreasManagement}
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs shadow-xs transition-all cursor-pointer"
+            >
+              <Map className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Locais Operacionais</span>
+            </button>
+          )}
+
+          {canManage && (
+            <button
+              type="button"
+              onClick={onOpenGenerator}
+              className="grow sm:grow-0 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Gerar Nova Ordem de Serviço</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Metrics Row */}
@@ -107,18 +210,26 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
           <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
             {workOrders.length}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Ordens registradas</div>
+          <div className="text-[11px] text-slate-400 mt-1">
+            {openOrdersCount > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 font-semibold font-mono">
+                {openOrdersCount} aberta(s) aguardando baixa
+              </span>
+            ) : (
+              'Todas baixadas/concluídas'
+            )}
+          </div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-semibold">Peças Aplicadas</span>
+            <span className="text-xs font-semibold">Peças Efetivamente Baixadas</span>
             <Package className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
             {totalPartsDeducted} <span className="text-xs text-slate-400 font-normal">un</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Baixadas do estoque</div>
+          <div className="text-[11px] text-slate-400 mt-1">Debitadas fisicamente</div>
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -150,14 +261,54 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por Nº da O.S., Heliel, Bomba B-03, Rolamento, Retentor..."
+            placeholder="Buscar por Nº da O.S. (ex: OS-2026-0043), Heliel, Bomba B-03, Rolamento, Retentor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Filter by Status */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-medium"
+          >
+            <option value="ALL">Status: Todos</option>
+            <option value="ABERTA">🟡 ABERTAS (Aguardando Baixa)</option>
+            <option value="PARCIAL">🔵 BAIXA PARCIAL</option>
+            <option value="CONCLUIDA">🟢 CONCLUÍDAS (100% Baixadas)</option>
+            <option value="CANCELADA">⚪ CANCELADAS</option>
+          </select>
+
+          {/* Filter by Operational Area */}
+          <select
+            value={selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value)}
+            className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-medium"
+          >
+            <option value="ALL">📍 Todos os Locais / Estações</option>
+            {areas && areas.length > 0 ? (
+              areas.map((ar) => (
+                <option key={ar.id} value={ar.name}>
+                  {ar.name}
+                </option>
+              ))
+            ) : (
+              <>
+                <option value="ETA PIRAUNA">ETA PIRAUNA</option>
+                <option value="ETE CACHORRO">ETE CACHORRO</option>
+                <option value="EETE CACHORRO">EETE CACHORRO</option>
+                <option value="EEAB BOLDRO">EEAB BOLDRO</option>
+                <option value="DESSALINIZADOR">DESSALINIZADOR</option>
+                <option value="POÇO 01">POÇO 01</option>
+                <option value="POÇO 02">POÇO 02</option>
+              </>
+            )}
+          </select>
+
+          {/* Filter by Service Type */}
           <select
             value={selectedServiceType}
             onChange={(e) => setSelectedServiceType(e.target.value)}
@@ -205,11 +356,18 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
               <div className="space-y-3">
                 {/* Header info */}
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
                         {wo.osNumber}
                       </span>
+                      {getStatusBadge(wo.status)}
+                      {wo.operationalArea && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 shrink-0 text-blue-500" />
+                          <span>{wo.operationalArea}</span>
+                        </span>
+                      )}
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                         {wo.serviceType}
                       </span>
@@ -231,20 +389,28 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                     <span className="font-bold text-sm font-mono text-slate-900 dark:text-white">
                       {formatCurrency(wo.totalCost)}
                     </span>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] font-mono border border-emerald-200 dark:border-emerald-800">
-                      {wo.totalQuantity || wo.items.reduce((s, i) => s + i.quantity, 0)} un baixadas
+                    <span
+                      className={`px-2 py-0.5 rounded-md font-bold text-[10px] font-mono border ${
+                        (wo.status || 'CONCLUIDA') === 'ABERTA'
+                          ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                          : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      }`}
+                    >
+                      {(wo.status || 'CONCLUIDA') === 'ABERTA'
+                        ? '0 un baixadas (Pendente)'
+                        : `${wo.totalQuantity || wo.items.reduce((s, i) => s + (i.dischargedQuantity ?? i.quantity), 0)} un baixadas`}
                     </span>
                   </div>
                 </div>
 
                 {/* Application & TAG */}
                 <div>
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1">
-                    {wo.equipmentTag && <span className="text-blue-600 font-mono mr-1">[{wo.equipmentTag}]</span>}
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 break-words leading-snug">
+                    {wo.equipmentTag && <span className="text-emerald-600 dark:text-emerald-400 font-mono mr-1.5">[{wo.equipmentTag}]</span>}
                     {wo.application}
                   </div>
                   {wo.notes && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 italic">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic break-words leading-relaxed">
                       "{wo.notes}"
                     </p>
                   )}
@@ -270,35 +436,78 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                 {/* Material Pill summary */}
                 <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs space-y-1">
                   <div className="text-[10px] text-slate-400 font-semibold uppercase flex items-center justify-between">
-                    <span>Materiais Requisitados ({wo.items.length} itens):</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-300">{wo.totalQuantity} un no total</span>
+                    <span>Materiais Solicitados ({wo.items.length} itens):</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                      {wo.items.reduce((s, i) => s + i.quantity, 0)} un total
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {wo.items.map((it, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-medium border border-slate-200 dark:border-slate-600"
-                      >
-                        {it.quantity}x {it.productName.split('(')[0]}
-                      </span>
-                    ))}
+                    {wo.items.map((it, idx) => {
+                      const discharged = it.dischargedQuantity !== undefined ? it.dischargedQuantity : (wo.status === 'ABERTA' ? 0 : it.quantity);
+                      return (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-medium border border-slate-200 dark:border-slate-600 flex items-center gap-1"
+                        >
+                          <span>{it.quantity}x {it.productName.split('(')[0]}</span>
+                          {discharged < it.quantity && (
+                            <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                              (bx: {discharged})
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               {/* Card Footer Actions */}
-              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    generateWorkOrderPDF(wo, true, false);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Baixar O.S. (Via Campo)</span>
-                </button>
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {/* Primary Discharge Button for Open/Partial Work Orders */}
+                  {((wo.status || 'CONCLUIDA') === 'ABERTA' || wo.status === 'PARCIAL') && onConfirmDischarge && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDischargeModalWorkOrder(wo);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-xs transition-colors text-xs"
+                      title="Dar baixa dos materiais usados no estoque"
+                    >
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      <span>Dar Baixa</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      generateWorkOrderPDF(wo, true, false);
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors text-[11px]"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Guia/O.S.</span>
+                  </button>
+
+                  {onConfirmReturn && (wo.status === 'CONCLUIDA' || wo.status === 'PARCIAL') && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReturnModalWorkOrder(wo);
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition-colors border border-slate-200 dark:border-slate-700"
+                      title="Devolver sobras de material não utilizado ao almoxarifado"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Sobra</span>
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-1 text-slate-400 group-hover:text-emerald-600 transition-colors font-semibold text-[11px]">
                   <span>Ver Detalhes</span>
@@ -366,8 +575,39 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
 
             {/* Content */}
             <div className="p-6 overflow-y-auto space-y-6 text-slate-800 dark:text-slate-200 text-xs">
+              {/* Alert banner if O.S. is Open */}
+              {((selectedWorkOrder.status || 'CONCLUIDA') === 'ABERTA' || selectedWorkOrder.status === 'PARCIAL') && (
+                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-amber-900 dark:text-amber-200 text-xs">
+                        {selectedWorkOrder.status === 'PARCIAL' ? 'Baixa Parcial Registrada' : 'Ordem de Serviço Aberta (Aguardando Baixa Física)'}
+                      </h4>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 mt-0.5">
+                        Esta O.S. gerou a Guia de Campo/Liberação. Registre a baixa física dos itens realmente utilizados para debitar do estoque.
+                      </p>
+                    </div>
+                  </div>
+                  {onConfirmDischarge && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const wo = selectedWorkOrder;
+                        setSelectedWorkOrder(null);
+                        setDischargeModalWorkOrder(wo);
+                      }}
+                      className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-all"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                      <span>Dar Baixa nos Materiais</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Info Grid */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 grid grid-cols-2 sm:grid-cols-6 gap-3">
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">Solicitante</span>
                   <span className="font-bold text-slate-900 dark:text-white text-sm">
@@ -381,14 +621,24 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                   </span>
                 </div>
                 <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Local Operacional</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400 text-sm flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                    {selectedWorkOrder.operationalArea || 'Geral'}
+                  </span>
+                </div>
+                <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">TAG / Equipamento</span>
                   <span className="font-bold text-slate-900 dark:text-white text-sm">
                     {selectedWorkOrder.equipmentTag || 'Geral'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Tipo & Prioridade</span>
-                  <span className="font-bold text-slate-900 dark:text-white text-sm">
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Status / Tipo</span>
+                  <div className="mt-0.5">
+                    {getStatusBadge(selectedWorkOrder.status)}
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-500 block mt-0.5">
                     {selectedWorkOrder.serviceType}
                   </span>
                 </div>
@@ -414,7 +664,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-[11px] uppercase font-bold text-slate-400">
-                    Materiais Baixados do Estoque ({selectedWorkOrder.items.length} itens):
+                    Materiais da Ordem de Serviço ({selectedWorkOrder.items.length} itens):
                   </h4>
                   <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-medium">
                     Valores visíveis para Almoxarifado e ADM
@@ -427,40 +677,75 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                         <th className="py-2.5 px-3">Código</th>
                         <th className="py-2.5 px-3">Material / Peça</th>
                         <th className="py-2.5 px-3 text-center">Unidade</th>
+                        <th className="py-2.5 px-3 text-center">Qtd Solicitada</th>
                         <th className="py-2.5 px-3 text-center">Qtd Baixada</th>
+                        <th className="py-2.5 px-3 text-center">Saldo Pendente</th>
+                        <th className="py-2.5 px-3 text-center">Qtd Devolvida</th>
                         <th className="py-2.5 px-3 text-right">Custo Unit. (ADM)</th>
                         <th className="py-2.5 px-3 text-right">Subtotal (ADM)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {selectedWorkOrder.items.map((it, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="py-2.5 px-3 font-mono font-bold">{it.productCode}</td>
-                          <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white">
-                            {it.productName}
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-semibold text-slate-500">
-                            {it.unit || 'UN'}
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                            {it.quantity} {it.unit || 'UN'}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-400">
-                            {formatCurrency(it.unitPrice)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
-                            {formatCurrency(it.totalPrice)}
-                          </td>
-                        </tr>
-                      ))}
+                      {selectedWorkOrder.items.map((it, idx) => {
+                        const returned = it.returnedQuantity || 0;
+                        const discharged = it.dischargedQuantity !== undefined ? it.dischargedQuantity : (selectedWorkOrder.status === 'ABERTA' ? 0 : it.quantity);
+                        const pending = Math.max(0, it.quantity - discharged);
+                        const actualUsed = Math.max(0, discharged - returned);
+                        const actualSubtotal = (selectedWorkOrder.status === 'ABERTA' ? it.quantity : actualUsed) * it.unitPrice;
+
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <td className="py-2.5 px-3 font-mono font-bold">{it.productCode}</td>
+                            <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white break-words whitespace-normal">
+                              {it.productName}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-semibold text-slate-500">
+                              {it.unit || 'UN'}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-700 dark:text-slate-300">
+                              {it.quantity} {it.unit || 'UN'}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              {discharged} {it.unit || 'UN'}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono">
+                              {pending > 0 ? (
+                                <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold text-[11px]">
+                                  {pending} {it.unit || 'UN'}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">0</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono">
+                              {returned > 0 ? (
+                                <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-800">
+                                  -{returned} {it.unit || 'UN'}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 text-[11px]">-</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-400">
+                              {formatCurrency(it.unitPrice)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                              {formatCurrency(actualSubtotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                     <tfoot className="bg-slate-50 dark:bg-slate-800/80 font-bold border-t border-slate-200 dark:border-slate-700">
                       <tr>
-                        <td colSpan={3} className="py-3 px-3">
-                          Total Geral da Ordem de Serviço
+                        <td colSpan={4} className="py-3 px-3">
+                          Total da Ordem de Serviço
                         </td>
-                        <td className="py-3 px-3 text-center text-xs text-slate-700 dark:text-slate-300 font-mono font-bold">
-                          {selectedWorkOrder.totalQuantity || selectedWorkOrder.items.reduce((s, i) => s + i.quantity, 0)} un
+                        <td className="py-3 px-3 text-center text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                          {selectedWorkOrder.items.reduce((s, i) => s + (i.dischargedQuantity !== undefined ? i.dischargedQuantity : (selectedWorkOrder.status === 'ABERTA' ? 0 : i.quantity)), 0)} un baixadas
+                        </td>
+                        <td colSpan={2} className="py-3 px-3 text-center text-xs text-slate-500 font-mono">
+                          {selectedWorkOrder.totalQuantity} un solicitadas
                         </td>
                         <td colSpan={2} className="py-3 px-3 text-right text-sm text-emerald-600 dark:text-emerald-400 font-mono font-bold">
                           {formatCurrency(selectedWorkOrder.totalCost)}
@@ -470,6 +755,36 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                   </table>
                 </div>
               </div>
+
+              {/* Returns History Section */}
+              {selectedWorkOrder.returns && selectedWorkOrder.returns.length > 0 && (
+                <div className="p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/60 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-xs">
+                    <History className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>Histórico de Devoluções / Ajuste de Sobras ({selectedWorkOrder.returns.length} registros)</span>
+                  </div>
+                  <div className="space-y-1.5 pt-1">
+                    {selectedWorkOrder.returns.map((ret) => (
+                      <div
+                        key={ret.id}
+                        className="p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-amber-200/60 dark:border-amber-900/60 flex flex-wrap items-center justify-between gap-2 text-[11px]"
+                      >
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {ret.quantityReturned}x {ret.productName}
+                          </span>
+                          <div className="text-slate-500 dark:text-slate-400 text-[10px]">
+                            Devolvido por <strong>{ret.returnedBy}</strong> • Motivo: <em>{ret.reason || 'Sobra de O.S.'}</em>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {formatDateTime(ret.timestamp)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {selectedWorkOrder.notes && (
                 <div>
@@ -489,7 +804,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                 A via de manutenção oculta os valores para uso da equipe técnica.
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedWorkOrder(null)}
@@ -497,6 +812,39 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                 >
                   Fechar
                 </button>
+
+                {/* Discharge Action inside Modal */}
+                {((selectedWorkOrder.status || 'CONCLUIDA') === 'ABERTA' || selectedWorkOrder.status === 'PARCIAL') && onConfirmDischarge && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const wo = selectedWorkOrder;
+                      setSelectedWorkOrder(null);
+                      setDischargeModalWorkOrder(wo);
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-all"
+                    title="Realizar a baixa física dos materiais utilizados"
+                  >
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    <span>Dar Baixa Física no Estoque</span>
+                  </button>
+                )}
+
+                {onConfirmReturn && (selectedWorkOrder.status === 'CONCLUIDA' || selectedWorkOrder.status === 'PARCIAL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const wo = selectedWorkOrder;
+                      setSelectedWorkOrder(null);
+                      setReturnModalWorkOrder(wo);
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 font-bold text-xs shadow-sm transition-all"
+                    title="Devolver sobra não utilizada ao estoque"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Devolver Sobra</span>
+                  </button>
+                )}
 
                 <button
                   type="button"
@@ -515,12 +863,35 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
                   title="Via padrão para o mecânico (sem valores)"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Baixar O.S. (Via de Campo)</span>
+                  <span>Baixar Guia/O.S.</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* DISCHARGE WORK ORDER MODAL */}
+      {dischargeModalWorkOrder && onConfirmDischarge && (
+        <WorkOrderDischargeModal
+          isOpen={!!dischargeModalWorkOrder}
+          onClose={() => setDischargeModalWorkOrder(null)}
+          workOrder={dischargeModalWorkOrder}
+          products={products}
+          currentUser={currentUser}
+          onConfirmDischarge={onConfirmDischarge}
+        />
+      )}
+
+      {/* RETURN MATERIAL MODAL */}
+      {returnModalWorkOrder && onConfirmReturn && (
+        <WorkOrderReturnModal
+          isOpen={!!returnModalWorkOrder}
+          onClose={() => setReturnModalWorkOrder(null)}
+          workOrder={returnModalWorkOrder}
+          currentUser={currentUser}
+          onConfirmReturn={onConfirmReturn}
+        />
       )}
     </div>
   );

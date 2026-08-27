@@ -38,6 +38,17 @@ export interface UserRecord {
   lastLogin?: string;
 }
 
+export interface OperationalAreaRecord {
+  id: string;
+  name: string;
+  type: 'ETA' | 'ETE' | 'EETE' | 'EEAB' | 'POCO' | 'DESSALINIZADOR' | 'OFICINA' | 'OUTROS';
+  code?: string;
+  description?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 interface DBStructure {
   products: Array<{
     id: string;
@@ -56,6 +67,7 @@ interface DBStructure {
     supplier?: string;
     location?: string;
     equipmentTag?: string;
+    operationalArea?: string;
     criticality?: 'HIGH' | 'MEDIUM' | 'LOW';
     createdAt: string;
     updatedAt: string;
@@ -74,11 +86,13 @@ interface DBStructure {
     reason: string;
     documentNumber?: string;
     contactName?: string;
+    operationalArea?: string;
     responsible: string;
     notes?: string;
     timestamp: string;
   }>;
   users: Array<UserRecord>;
+  areas: Array<OperationalAreaRecord>;
   workOrders: Array<{
     id: string;
     osNumber: string;
@@ -86,6 +100,7 @@ interface DBStructure {
     serviceType: string;
     application: string;
     equipmentTag?: string;
+    operationalArea?: string;
     requesterName: string;
     requesterRole?: string;
     authorizedBy: string;
@@ -96,7 +111,9 @@ interface DBStructure {
       productId: string;
       productCode: string;
       productName: string;
-      quantity: number;
+      quantity: number; // Quantidade solicitada na Guia
+      dischargedQuantity?: number; // Quantidade baixada no estoque
+      returnedQuantity?: number; // Quantidade devolvida ao estoque (sobra)
       unit: string;
       unitPrice: number;
       totalPrice: number;
@@ -104,7 +121,19 @@ interface DBStructure {
     }>;
     totalCost: number;
     totalQuantity: number;
-    status: string;
+    status: string; // 'ABERTA' | 'PARCIAL' | 'CONCLUIDA' | 'CANCELADA'
+    dischargedAt?: string;
+    dischargedBy?: string;
+    returns?: Array<{
+      id: string;
+      productId: string;
+      productCode: string;
+      productName: string;
+      quantityReturned: number;
+      returnedBy: string;
+      reason?: string;
+      timestamp: string;
+    }>;
     notes?: string;
     createdAt: string;
   }>;
@@ -157,7 +186,7 @@ const initialSeedData: DBStructure = {
       role: 'MECANICO',
       passwordHash: hashPassword('heliel123'),
       active: true,
-      department: 'Manutenção Mecânica de Fábrica',
+      department: 'Manutenção Eletromecânica de Saneamento',
       avatarColor: 'bg-amber-600',
       createdAt: '2026-08-01T08:00:00.000Z',
     },
@@ -512,6 +541,7 @@ const initialSeedData: DBStructure = {
           productCode: 'ROL-3311',
           productName: 'Rolamento 3311 (Contato Angular Duplo)',
           quantity: 1,
+          dischargedQuantity: 1,
           unit: 'UN',
           unitPrice: 380.0,
           totalPrice: 380.0,
@@ -522,6 +552,7 @@ const initialSeedData: DBStructure = {
           productCode: 'ROL-3310',
           productName: 'Rolamento 3310 (Contato Angular Duplo)',
           quantity: 1,
+          dischargedQuantity: 1,
           unit: 'UN',
           unitPrice: 345.0,
           totalPrice: 345.0,
@@ -532,6 +563,7 @@ const initialSeedData: DBStructure = {
           productCode: 'RET-473610',
           productName: 'Retentor 47x36x10 NBR (Vedação Industrial)',
           quantity: 1,
+          dischargedQuantity: 1,
           unit: 'UN',
           unitPrice: 32.5,
           totalPrice: 32.5,
@@ -542,6 +574,7 @@ const initialSeedData: DBStructure = {
           productCode: 'SLM-001',
           productName: 'Selo Mecânico 1.3/8" Silício/Silício Viton',
           quantity: 1,
+          dischargedQuantity: 1,
           unit: 'UN',
           unitPrice: 490.0,
           totalPrice: 490.0,
@@ -553,6 +586,133 @@ const initialSeedData: DBStructure = {
       status: 'CONCLUIDA',
       notes: 'Manutenção realizada com sucesso após ruído excessivo no mancal dianteiro. Testado sob pressão nominal.',
       createdAt: '2026-08-26T10:30:00.000Z',
+    },
+    {
+      id: 'os-seed-2',
+      osNumber: 'OS-2026-0043',
+      date: '2026-08-27T08:00:00.000Z',
+      serviceType: 'PREVENTIVA',
+      application: 'Bomba de Recalque ETA Piraúna - Lubrificação e Troca Preventiva de Rolamentos',
+      equipmentTag: 'BOM-01 / ETA-PIR',
+      operationalArea: 'ETA PIRAUNA',
+      requesterName: 'Heliel',
+      requesterRole: 'Mecânico de Manutenção',
+      authorizedBy: 'Carlos Almoxarife (Supervisão)',
+      warehouseKeeper: 'Carlos Almoxarife',
+      sector: 'Oficina Eletromecânica',
+      priority: 'ALTA',
+      items: [
+        {
+          productId: 'prod-1',
+          productCode: 'MNT-001',
+          productName: 'Rolamento Rígido de Esferas 6205 DDU (SKF)',
+          quantity: 2,
+          dischargedQuantity: 0,
+          unit: 'UN',
+          unitPrice: 42.5,
+          totalPrice: 85.0,
+          currentStock: 28,
+        },
+        {
+          productId: 'prod-3',
+          productCode: 'MNT-003',
+          productName: 'Graxa Azul para Rolamentos de Alta Rotação (Mobil Polyrex EM 400g)',
+          quantity: 2,
+          dischargedQuantity: 0,
+          unit: 'UN',
+          unitPrice: 38.0,
+          totalPrice: 76.0,
+          currentStock: 15,
+        },
+      ],
+      totalCost: 161.0,
+      totalQuantity: 4,
+      status: 'ABERTA',
+      notes: 'O.S. emitida e autorizada. Materiais liberados na Guia de Separação. Aguardando baixa física no almoxarifado pelo mecânico.',
+      createdAt: '2026-08-27T08:00:00.000Z',
+    },
+  ],
+  areas: [
+    {
+      id: 'area-eta-pirauna',
+      name: 'ETA PIRAUNA',
+      type: 'ETA',
+      code: 'ETA-PIR',
+      description: 'Estação de Tratamento de Água - Piraúna',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-ete-cachorro',
+      name: 'ETE CACHORRO',
+      type: 'ETE',
+      code: 'ETE-CAC',
+      description: 'Estação de Tratamento de Esgoto - Cachorro',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-eete-cachorro',
+      name: 'EETE CACHORRO',
+      type: 'EETE',
+      code: 'EETE-CAC',
+      description: 'Estação Elevatória de Tratamento de Esgoto - Cachorro',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-eeab-boldro',
+      name: 'EEAB BOLDRO',
+      type: 'EEAB',
+      code: 'EEAB-BOL',
+      description: 'Estação Elevatória de Água Bruta - Boldró',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-dessalinizador',
+      name: 'DESSALINIZADOR',
+      type: 'DESSALINIZADOR',
+      code: 'DES-01',
+      description: 'Unidade Principal de Dessalinização de Água (Osmose Reversa)',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-poco-01',
+      name: 'POÇO 01 - CAPTAÇÃO NORTE',
+      type: 'POCO',
+      code: 'POC-01',
+      description: 'Poço Tubular Profundo de Captação 01',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-poco-02',
+      name: 'POÇO 02 - CAPTAÇÃO SUL',
+      type: 'POCO',
+      code: 'POC-02',
+      description: 'Poço Tubular Profundo de Captação 02',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-poco-03',
+      name: 'POÇO 03 - RESERVA ESTRATÉGICA',
+      type: 'POCO',
+      code: 'POC-03',
+      description: 'Poço Tubular de Reserva Estratégica 03',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
+    },
+    {
+      id: 'area-oficina-central',
+      name: 'OFICINA MECÂNICA / ALMOXARIFADO',
+      type: 'OFICINA',
+      code: 'OFI-ALM',
+      description: 'Oficina Central de Manutenção e Almoxarifado MRO',
+      active: true,
+      createdAt: '2026-08-01T08:00:00.000Z',
     },
   ],
 };
@@ -580,6 +740,17 @@ function readDB(): DBStructure {
     for (const seedProd of initialSeedData.products) {
       if (!data.products.some((p: { id: string; code: string }) => p.id === seedProd.id || p.code === seedProd.code)) {
         data.products.push(seedProd);
+      }
+    }
+
+    // Ensure areas exist
+    if (!data.areas || !Array.isArray(data.areas) || data.areas.length === 0) {
+      data.areas = initialSeedData.areas;
+    } else {
+      for (const seedArea of initialSeedData.areas) {
+        if (!data.areas.some((a: OperationalAreaRecord) => a.id === seedArea.id || a.name.toUpperCase() === seedArea.name.toUpperCase())) {
+          data.areas.push(seedArea);
+        }
       }
     }
 
@@ -848,8 +1019,110 @@ app.get('/api/inventory', (req, res) => {
     products: db.products,
     movements: db.movements,
     workOrders: db.workOrders || [],
+    areas: db.areas || [],
     users: db.users.map(sanitizeUser),
   });
+});
+
+// ==========================================
+// OPERATIONAL AREAS (LOCAIS / ESTAÇÕES / POÇOS) ROUTES
+// ==========================================
+
+// GET all areas
+app.get('/api/areas', (req, res) => {
+  const db = readDB();
+  res.json({ areas: db.areas || [] });
+});
+
+// POST Create new area
+app.post('/api/areas', (req, res) => {
+  const { name, type, code, description } = req.body;
+
+  if (!name || !String(name).trim()) {
+    return res.status(400).json({ error: 'Nome do local/área é obrigatório (ex: ETA PIRAUNA, ETE CACHORRO).' });
+  }
+
+  const db = readDB();
+  if (!db.areas) db.areas = [];
+
+  const cleanName = String(name).trim().toUpperCase();
+  if (db.areas.some((a) => a.name.toUpperCase() === cleanName)) {
+    return res.status(409).json({ error: `O local/área "${cleanName}" já está cadastrado.` });
+  }
+
+  const now = new Date().toISOString();
+  const validTypes = ['ETA', 'ETE', 'EETE', 'EEAB', 'POCO', 'DESSALINIZADOR', 'OFICINA', 'OUTROS'];
+  const assignedType = (type && validTypes.includes(type) ? type : 'OUTROS') as OperationalAreaRecord['type'];
+
+  const newArea: OperationalAreaRecord = {
+    id: `area-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    name: cleanName,
+    type: assignedType,
+    code: code?.trim()?.toUpperCase() || undefined,
+    description: description?.trim() || undefined,
+    active: true,
+    createdAt: now,
+  };
+
+  db.areas.push(newArea);
+  writeDB(db);
+
+  res.status(201).json({ success: true, area: newArea, areas: db.areas });
+});
+
+// PUT Update area
+app.put('/api/areas/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, type, code, description, active } = req.body;
+
+  const db = readDB();
+  if (!db.areas) db.areas = [];
+  const area = db.areas.find((a) => a.id === id);
+
+  if (!area) {
+    return res.status(404).json({ error: 'Local/área não encontrado.' });
+  }
+
+  if (name && String(name).trim()) {
+    const cleanName = String(name).trim().toUpperCase();
+    const duplicate = db.areas.find((a) => a.id !== id && a.name.toUpperCase() === cleanName);
+    if (duplicate) {
+      return res.status(409).json({ error: `Já existe outro local/área com o nome "${cleanName}".` });
+    }
+    area.name = cleanName;
+  }
+
+  if (type) {
+    const validTypes = ['ETA', 'ETE', 'EETE', 'EEAB', 'POCO', 'DESSALINIZADOR', 'OFICINA', 'OUTROS'];
+    if (validTypes.includes(type)) {
+      area.type = type as OperationalAreaRecord['type'];
+    }
+  }
+
+  if (code !== undefined) area.code = code?.trim()?.toUpperCase() || undefined;
+  if (description !== undefined) area.description = description?.trim() || undefined;
+  if (active !== undefined) area.active = Boolean(active);
+  area.updatedAt = new Date().toISOString();
+
+  writeDB(db);
+  res.json({ success: true, area, areas: db.areas });
+});
+
+// DELETE area
+app.delete('/api/areas/:id', (req, res) => {
+  const { id } = req.params;
+  const db = readDB();
+  if (!db.areas) db.areas = [];
+  const index = db.areas.findIndex((a) => a.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Local/área não encontrado.' });
+  }
+
+  const removed = db.areas.splice(index, 1)[0];
+  writeDB(db);
+
+  res.json({ success: true, removed, areas: db.areas });
 });
 
 // POST Create new product
@@ -1058,6 +1331,25 @@ app.post('/api/movements', (req, res) => {
   }
 
   db.movements.unshift(movement);
+
+  // Link to Work Order if documentNumber matches an OS
+  if (documentNumber && db.workOrders) {
+    const matchedWO = db.workOrders.find(
+      (w) => w.osNumber.toLowerCase() === documentNumber.trim().toLowerCase() || w.id === documentNumber.trim()
+    );
+    if (matchedWO) {
+      const woItem = matchedWO.items.find((it) => it.productId === product.id || it.productCode === product.code);
+      if (woItem && type === 'OUT') {
+        woItem.dischargedQuantity = (woItem.dischargedQuantity || 0) + qty;
+        const allDischarged = matchedWO.items.every((it) => (it.dischargedQuantity || 0) >= it.quantity);
+        const someDischarged = matchedWO.items.some((it) => (it.dischargedQuantity || 0) > 0);
+        matchedWO.status = allDischarged ? 'CONCLUIDA' : someDischarged ? 'PARCIAL' : 'ABERTA';
+        matchedWO.dischargedAt = now;
+        matchedWO.dischargedBy = responsible || matchedWO.requesterName;
+      }
+    }
+  }
+
   writeDB(db);
 
   res.status(201).json({
@@ -1065,6 +1357,7 @@ app.post('/api/movements', (req, res) => {
     product,
     products: db.products,
     movements: db.movements,
+    workOrders: db.workOrders || [],
   });
 });
 
@@ -1182,7 +1475,7 @@ app.get('/api/work-orders/next-number', (req, res) => {
   res.json({ nextNumber });
 });
 
-// POST Create Work Order (with multi-item stock decrement and movement logging)
+// POST Create Work Order (Liberação de Materiais & Emissão de Guia)
 app.post('/api/work-orders', (req, res) => {
   const {
     osNumber: requestedOsNumber,
@@ -1190,6 +1483,7 @@ app.post('/api/work-orders', (req, res) => {
     serviceType,
     application,
     equipmentTag,
+    operationalArea,
     requesterName,
     requesterRole,
     authorizedBy,
@@ -1198,6 +1492,7 @@ app.post('/api/work-orders', (req, res) => {
     priority,
     items, // array of { productId, quantity, unitPrice? }
     notes,
+    autoDischarge = false, // false by default: apenas gera a O.S. e Guia (status ABERTA), sem debitar o estoque físico
   } = req.body;
 
   if (!requesterName || !authorizedBy || !application) {
@@ -1221,7 +1516,6 @@ app.post('/api/work-orders', (req, res) => {
 
   // Check if OS number already exists
   if (db.workOrders?.some((w) => w.osNumber === osNumber)) {
-    // Generate unique suffix if duplicate
     osNumber = `${osNumber}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
   }
 
@@ -1239,51 +1533,55 @@ app.post('/api/work-orders', (req, res) => {
     const qty = Number(itemReq.quantity) || 1;
     if (qty <= 0) continue;
 
-    const prevStock = product.currentStock;
-    const newStock = Math.max(0, prevStock - qty);
     const unitPrice = Number(itemReq.unitPrice) || product.costPrice || product.sellingPrice || 0;
     const itemTotal = qty * unitPrice;
 
     totalCost += itemTotal;
     totalQuantity += qty;
 
-    // Deduct stock
-    product.currentStock = newStock;
-    product.updatedAt = now;
+    if (autoDischarge) {
+      // Immediate discharge mode
+      const prevStock = product.currentStock;
+      const newStock = Math.max(0, prevStock - qty);
+      product.currentStock = newStock;
+      product.updatedAt = now;
 
-    // Create OUT movement linked to OS
-    const movId = `mov-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    const movRecord = {
-      id: movId,
-      productId: product.id,
-      productCode: product.code,
-      productName: product.name,
-      type: 'OUT' as const,
-      quantity: qty,
-      previousStock: prevStock,
-      newStock: newStock,
-      unitPrice: unitPrice,
-      totalPrice: itemTotal,
-      reason: `Aplicação em O.S. ${serviceType || 'Industrial'}`,
-      documentNumber: osNumber,
-      contactName: `TAG: ${equipmentTag || 'Manutenção Geral'} | Solicitante: ${requesterName} (Aut: ${authorizedBy})`,
-      responsible: requesterName,
-      notes: `O.S. ${osNumber} - Aplicação: ${application}. Autorizado por: ${authorizedBy}. ${notes ? `Obs: ${notes}` : ''}`,
-      timestamp: now,
-    };
+      const movId = `mov-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+      const movRecord = {
+        id: movId,
+        productId: product.id,
+        productCode: product.code,
+        productName: product.name,
+        type: 'OUT' as const,
+        quantity: qty,
+        previousStock: prevStock,
+        newStock: newStock,
+        unitPrice: unitPrice,
+        totalPrice: itemTotal,
+        reason: `Aplicação em O.S. ${serviceType || 'Industrial'}${operationalArea ? ` (${operationalArea})` : ''}`,
+        documentNumber: osNumber,
+        contactName: `Local: ${operationalArea || 'Geral'} | TAG: ${equipmentTag || 'N/A'} | Solicitante: ${requesterName}`,
+        operationalArea: operationalArea?.trim() || undefined,
+        responsible: requesterName,
+        notes: `O.S. ${osNumber} - Local: ${operationalArea || 'N/A'} - Aplicação: ${application}. Autorizado por: ${authorizedBy}. ${notes ? `Obs: ${notes}` : ''}`,
+        timestamp: now,
+      };
 
-    db.movements.unshift(movRecord);
-    newMovements.push(movRecord);
+      db.movements.unshift(movRecord);
+      newMovements.push(movRecord);
+    }
 
     processedItems.push({
       productId: product.id,
       productCode: product.code,
       productName: product.name,
       quantity: qty,
+      dischargedQuantity: autoDischarge ? qty : 0,
+      returnedQuantity: 0,
       unit: product.unit || 'UN',
       unitPrice: unitPrice,
       totalPrice: itemTotal,
-      currentStock: newStock,
+      currentStock: product.currentStock,
     });
   }
 
@@ -1294,6 +1592,7 @@ app.post('/api/work-orders', (req, res) => {
     serviceType: serviceType || 'CORRETIVA',
     application: application.trim(),
     equipmentTag: equipmentTag?.trim() || undefined,
+    operationalArea: operationalArea?.trim() || undefined,
     requesterName: requesterName.trim(),
     requesterRole: requesterRole?.trim() || 'Mecânico / Técnico',
     authorizedBy: authorizedBy.trim(),
@@ -1303,7 +1602,9 @@ app.post('/api/work-orders', (req, res) => {
     items: processedItems,
     totalCost,
     totalQuantity,
-    status: 'CONCLUIDA',
+    status: autoDischarge ? 'CONCLUIDA' : 'ABERTA',
+    dischargedAt: autoDischarge ? now : undefined,
+    dischargedBy: autoDischarge ? requesterName : undefined,
     notes: notes?.trim() || undefined,
     createdAt: now,
   };
@@ -1314,6 +1615,248 @@ app.post('/api/work-orders', (req, res) => {
 
   res.status(201).json({
     success: true,
+    message: autoDischarge
+      ? `O.S. ${osNumber} criada e baixada no estoque com sucesso!`
+      : `O.S. ${osNumber} gerada com sucesso! Materiais liberados e Guia emitida (Aguardando Baixa física no almoxarifado).`,
+    workOrder,
+    products: db.products,
+    movements: db.movements,
+    workOrders: db.workOrders,
+  });
+});
+
+// POST Discharge / Baixa de Materiais de uma O.S. aberta (Debita estoque físico e conclui a O.S.)
+app.post('/api/work-orders/:id/discharge', (req, res) => {
+  const { id } = req.params;
+  const { itemsToDischarge, dischargedBy, notes } = req.body;
+
+  const db = readDB();
+  const workOrder = (db.workOrders || []).find((w) => w.id === id || w.osNumber === id);
+
+  if (!workOrder) {
+    return res.status(404).json({ error: 'Ordem de Serviço não encontrada.' });
+  }
+
+  if (workOrder.status === 'CANCELADA') {
+    return res.status(400).json({ error: 'Esta Ordem de Serviço foi cancelada e não pode receber baixa.' });
+  }
+
+  const now = new Date().toISOString();
+  const responsiblePerson = dischargedBy?.trim() || workOrder.requesterName || 'Almoxarife / Técnico';
+  let dischargedCount = 0;
+
+  // If specific items were passed, discharge those; otherwise discharge all remaining items
+  for (const item of workOrder.items) {
+    const alreadyDischarged = item.dischargedQuantity || 0;
+    const remainingToDischarge = Math.max(0, item.quantity - alreadyDischarged);
+
+    if (remainingToDischarge <= 0) continue;
+
+    let qtyToDischarge = remainingToDischarge;
+    if (itemsToDischarge && Array.isArray(itemsToDischarge)) {
+      const target = itemsToDischarge.find((it) => it.productId === item.productId || it.productCode === item.productCode);
+      if (!target) continue;
+      qtyToDischarge = Math.min(Number(target.quantity) || 0, remainingToDischarge);
+    }
+
+    if (qtyToDischarge <= 0) continue;
+
+    const product = db.products.find((p) => p.id === item.productId || p.code === item.productCode);
+    if (!product) continue;
+
+    const prevStock = product.currentStock;
+    const newStock = Math.max(0, prevStock - qtyToDischarge);
+    const unitPrice = item.unitPrice || product.costPrice || 0;
+    const itemTotal = qtyToDischarge * unitPrice;
+
+    // Deduct physical stock
+    product.currentStock = newStock;
+    product.updatedAt = now;
+
+    // Update work order item
+    item.dischargedQuantity = alreadyDischarged + qtyToDischarge;
+    dischargedCount++;
+
+    // Create OUT movement record
+    const movId = `mov-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const movRecord = {
+      id: movId,
+      productId: product.id,
+      productCode: product.code,
+      productName: product.name,
+      type: 'OUT' as const,
+      quantity: qtyToDischarge,
+      previousStock: prevStock,
+      newStock: newStock,
+      unitPrice: unitPrice,
+      totalPrice: itemTotal,
+      reason: `Aplicação em O.S. ${workOrder.serviceType || 'Industrial'}${workOrder.operationalArea ? ` (${workOrder.operationalArea})` : ''}`,
+      documentNumber: workOrder.osNumber,
+      contactName: `Local: ${workOrder.operationalArea || 'Geral'} | TAG: ${workOrder.equipmentTag || 'N/A'} | Solicitante: ${workOrder.requesterName}`,
+      operationalArea: workOrder.operationalArea,
+      responsible: responsiblePerson,
+      notes: `Baixa física de material referente à O.S. ${workOrder.osNumber} - ${workOrder.application}. Baixado: ${qtyToDischarge} ${item.unit || 'UN'}. ${notes ? `Obs: ${notes}` : ''}`,
+      timestamp: now,
+    };
+
+    db.movements.unshift(movRecord);
+  }
+
+  if (dischargedCount === 0) {
+    return res.status(400).json({ error: 'Nenhum material pendente de baixa foi selecionado.' });
+  }
+
+  // Update Work Order Status
+  const allFullyDischarged = workOrder.items.every((it) => (it.dischargedQuantity || 0) >= it.quantity);
+  const someDischarged = workOrder.items.some((it) => (it.dischargedQuantity || 0) > 0);
+
+  workOrder.status = allFullyDischarged ? 'CONCLUIDA' : someDischarged ? 'PARCIAL' : 'ABERTA';
+  workOrder.dischargedAt = now;
+  workOrder.dischargedBy = responsiblePerson;
+
+  writeDB(db);
+
+  res.json({
+    success: true,
+    message: allFullyDischarged
+      ? `Baixa total da O.S. ${workOrder.osNumber} concluída com sucesso! Estoque debitado.`
+      : `Baixa parcial da O.S. ${workOrder.osNumber} realizada com sucesso!`,
+    workOrder,
+    products: db.products,
+    movements: db.movements,
+    workOrders: db.workOrders,
+  });
+});
+
+// POST Cancel Work Order
+app.post('/api/work-orders/:id/cancel', (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  const db = readDB();
+  const workOrder = (db.workOrders || []).find((w) => w.id === id || w.osNumber === id);
+
+  if (!workOrder) {
+    return res.status(404).json({ error: 'Ordem de Serviço não encontrada.' });
+  }
+
+  workOrder.status = 'CANCELADA';
+  workOrder.notes = `${workOrder.notes ? workOrder.notes + ' | ' : ''}CANCELADA em ${new Date().toLocaleDateString('pt-BR')}${reason ? `: ${reason}` : ''}`;
+
+  writeDB(db);
+
+  res.json({
+    success: true,
+    message: `Ordem de Serviço ${workOrder.osNumber} cancelada.`,
+    workOrder,
+    products: db.products,
+    movements: db.movements,
+    workOrders: db.workOrders,
+  });
+});
+
+// POST Return Unused Items from Work Order (Devolução de Sobra de O.S. ao Almoxarifado)
+app.post('/api/work-orders/:id/return', (req, res) => {
+  const { id } = req.params;
+  const { productId, quantity, returnedBy, reason, notes } = req.body;
+
+  const returnQty = Number(quantity);
+  if (!productId || isNaN(returnQty) || returnQty <= 0) {
+    return res.status(400).json({ error: 'Produto e quantidade válida para devolução são obrigatórios.' });
+  }
+
+  const db = readDB();
+  const workOrder = (db.workOrders || []).find((w) => w.id === id || w.osNumber === id);
+
+  if (!workOrder) {
+    return res.status(404).json({ error: 'Ordem de Serviço não encontrada.' });
+  }
+
+  const item = workOrder.items.find((it) => it.productId === productId || it.productCode === productId);
+  if (!item) {
+    return res.status(404).json({ error: 'Item não encontrado nesta Ordem de Serviço.' });
+  }
+
+  const previouslyReturned = item.returnedQuantity || 0;
+  const maxReturnable = item.quantity - previouslyReturned;
+
+  if (returnQty > maxReturnable) {
+    return res.status(400).json({
+      error: `A quantidade a devolver (${returnQty}) excede o saldo restante da O.S. (${maxReturnable} ${item.unit || 'UN'}).`,
+    });
+  }
+
+  const product = db.products.find((p) => p.id === item.productId || p.code === item.productCode);
+  if (!product) {
+    return res.status(404).json({ error: 'Produto não encontrado no cadastro do almoxarifado.' });
+  }
+
+  const now = new Date().toISOString();
+  const prevStock = product.currentStock;
+  const newStock = prevStock + returnQty;
+  const unitPrice = item.unitPrice || product.costPrice || 0;
+  const itemTotalValue = returnQty * unitPrice;
+
+  // 1. Restock physical product
+  product.currentStock = newStock;
+  product.updatedAt = now;
+
+  // 2. Create IN movement record for the return
+  const movId = `mov-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+  const movRecord = {
+    id: movId,
+    productId: product.id,
+    productCode: product.code,
+    productName: product.name,
+    type: 'IN' as const,
+    quantity: returnQty,
+    previousStock: prevStock,
+    newStock: newStock,
+    unitPrice: unitPrice,
+    totalPrice: itemTotalValue,
+    reason: 'Devolução de Sobra de O.S.',
+    documentNumber: workOrder.osNumber,
+    contactName: `Devolução O.S. ${workOrder.osNumber} | Local: ${workOrder.operationalArea || 'Geral'}`,
+    operationalArea: workOrder.operationalArea,
+    responsible: returnedBy?.trim() || workOrder.requesterName || 'Almoxarife / Técnico',
+    notes: `Devolução de sobra de material não utilizado da O.S. ${workOrder.osNumber}. Requisitado: ${item.quantity} ${item.unit || 'UN'}, Devolvido nesta data: ${returnQty} ${item.unit || 'UN'}. Motivo: ${reason || 'Ajuste de consumo real'}. ${notes ? `Obs: ${notes}` : ''}`,
+    timestamp: now,
+  };
+
+  db.movements.unshift(movRecord);
+
+  // 3. Update Work Order item returned quantity and totals
+  item.returnedQuantity = previouslyReturned + returnQty;
+
+  const returnRecord = {
+    id: `ret-${Date.now()}-${Math.random().toString(36).substr(2, 3)}`,
+    productId: product.id,
+    productCode: product.code,
+    productName: product.name,
+    quantityReturned: returnQty,
+    returnedBy: returnedBy?.trim() || workOrder.requesterName,
+    reason: reason || 'Sobra de material não utilizado',
+    timestamp: now,
+  };
+
+  if (!workOrder.returns) workOrder.returns = [];
+  workOrder.returns.unshift(returnRecord);
+
+  // Recalculate totals for the Work Order
+  workOrder.totalQuantity = workOrder.items.reduce(
+    (acc, it) => acc + (it.quantity - (it.returnedQuantity || 0)),
+    0
+  );
+  workOrder.totalCost = workOrder.items.reduce(
+    (acc, it) => acc + (it.quantity - (it.returnedQuantity || 0)) * it.unitPrice,
+    0
+  );
+
+  writeDB(db);
+
+  res.json({
+    success: true,
+    message: `${returnQty} ${item.unit || 'UN'} de "${product.name}" devolvido(s) ao estoque com sucesso!`,
     workOrder,
     products: db.products,
     movements: db.movements,
@@ -1370,6 +1913,7 @@ app.post('/api/backup', (req, res) => {
     products,
     movements,
     workOrders: Array.isArray(workOrders) ? workOrders : existingDB.workOrders || [],
+    areas: Array.isArray(req.body.areas) && req.body.areas.length > 0 ? req.body.areas : (existingDB.areas || initialSeedData.areas),
     users: Array.isArray(users) && users.length > 0 ? users : existingDB.users,
   };
 

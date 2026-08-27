@@ -13,6 +13,7 @@ import {
   KeyRound,
   UserPlus,
   FileText,
+  MapPin,
 } from 'lucide-react';
 import { User } from '../types';
 import { getUserRoleInfo, getInitials } from '../lib/utils';
@@ -25,6 +26,7 @@ interface HeaderProps {
   onOpenWorkOrderGenerator: () => void;
   onOpenAudit: () => void;
   onOpenUsersManagement: () => void;
+  onOpenAreasManagement?: () => void;
   onOpenLogin: () => void;
   onLogout: () => void;
   currentUser: User | null;
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenWorkOrderGenerator,
   onOpenAudit,
   onOpenUsersManagement,
+  onOpenAreasManagement,
   onOpenLogin,
   onLogout,
   currentUser,
@@ -81,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden xs:block">
-                Controle de Almoxarifado & Manutenção Industrial
+                Saneamento, Água & Manutenção Operacional
               </p>
             </div>
           </div>
@@ -194,6 +197,26 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   <div className="py-1">
+                    {onOpenAreasManagement && (
+                      <button
+                        id="menu-manage-areas-btn"
+                        type="button"
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onOpenAreasManagement();
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2.5 transition-colors"
+                      >
+                        <MapPin className="w-4 h-4 text-emerald-600" />
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-slate-100">
+                            Locais & Áreas Operacionais
+                          </div>
+                          <div className="text-[10px] text-slate-400">ETA, ETE, Estações, Poços</div>
+                        </div>
+                      </button>
+                    )}
+
                     <button
                       id="menu-manage-users-btn"
                       type="button"

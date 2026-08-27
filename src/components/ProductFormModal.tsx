@@ -45,20 +45,19 @@ const COMMON_UNITS: { value: ProductUnit; label: string }[] = [
 ];
 
 const SUGGESTED_MAINTENANCE_CATEGORIES = [
+  'Bombas & Recalque',
+  'Válvulas & Registros',
+  'Tratamento de Água & Químicos',
+  'Membranas & Filtros (Osmose/Areia)',
+  'Tubulações & Conexões (PVC/PEAD/FF)',
   'Rolamentos & Mancais',
-  'Pneumática',
-  'Hidráulica',
-  'Elétrica & Painéis',
-  'Motores & Redutores',
-  'Lubrificantes & Químicos',
-  'Correias & Polias',
-  'Vedações & Retentores',
-  'Fixação & Parafusos',
-  'Ferramentas & Desgaste',
-  'Sensores & Automação',
-  'EPI & Segurança Industrial',
-  'Bombas & Válvulas',
-  'Filtros & Elementos Filtrantes',
+  'Elétrica & Painéis de Comando',
+  'Motores & Inversores',
+  'Instrumentação & Sensores',
+  'Vedações & Selos Mecânicos',
+  'Fixação & Parafusos Inox',
+  'EPI & Segurança Operacional',
+  'Ferramentas & Acessórios',
   'Outros Sobressalentes',
 ];
 
@@ -283,8 +282,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {isEditing
-                    ? 'Atualize foto, código de barras, TAGs de máquina e dados do estoque'
-                    : 'Cadastre sobressalentes, ferramentas, EPIs ou peças de reposição'}
+                    ? 'Atualize foto, código de barras, TAGs operacionais e dados do estoque'
+                    : 'Cadastre sobressalentes, ferramentas, conexões ou peças de reposição'}
                 </p>
               </div>
             </div>
@@ -528,7 +527,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             {/* Maintenance Specific: Equipment TAG & Criticality */}
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
-                <Wrench className="w-3.5 h-3.5 text-emerald-600" /> Aplicação em Máquinas & Criticidade
+                <Wrench className="w-3.5 h-3.5 text-emerald-600" /> Aplicação Operacional & Criticidade
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
                 <div>
@@ -540,20 +539,20 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     <input
                       id="product-equipment-tag-input"
                       type="text"
-                      placeholder="Ex: PRE-HY-02 / RED-04 / Linha 01"
+                      placeholder="Ex: BOM-01 ETA, DOS-02 ETE, POÇO 01..."
                       value={formData.equipmentTag}
                       onChange={(e) => setFormData({ ...formData, equipmentTag: e.target.value })}
                       className="w-full pl-9 pr-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 transition-all"
                     />
                   </div>
                   <span className="text-[10px] text-slate-400 block mt-1">
-                    Ajuda o técnico a localizar o sobressalente por TAG de máquina.
+                    Ajuda o técnico a localizar o sobressalente por TAG operacional ou estação.
                   </span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Criticidade da Peça na Planta *
+                    Criticidade da Peça na Operação *
                   </label>
                   <select
                     id="product-criticality-select"
@@ -563,9 +562,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     }
                     className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
                   >
-                    <option value="HIGH">🔴 Alta (Crítica A - Causa Parada de Fábrica)</option>
-                    <option value="MEDIUM">🟡 Média (Importante B - Impacto Parcial)</option>
-                    <option value="LOW">⚪ Baixa (Geral C - Consumo / Sem Parada)</option>
+                    <option value="HIGH">🔴 Alta (Crítica A - Risco de Interrupção de Abastecimento/Tratamento)</option>
+                    <option value="MEDIUM">🟡 Média (Importante B - Impacto Parcial / Com Redundância)</option>
+                    <option value="LOW">⚪ Baixa (Geral C - Consumo / Sem Interrupção)</option>
                   </select>
                   <span className="text-[10px] text-slate-400 block mt-1">
                     Peças críticas geram alertas prioritários de reposição no almoxarifado.

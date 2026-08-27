@@ -15,7 +15,7 @@ import {
   Tag,
   Wrench,
 } from 'lucide-react';
-import { Product, MovementType, EntryReason, ExitReason } from '../types';
+import { Product, MovementType, EntryReason, ExitReason, WorkOrder } from '../types';
 import { formatCurrency, getStockStatus } from '../lib/utils';
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 
@@ -24,6 +24,7 @@ interface MovementModalProps {
   onClose: () => void;
   onSave: (movementData: any) => Promise<void>;
   products: Product[];
+  workOrders?: WorkOrder[];
   initialType?: MovementType;
   preselectedProduct?: Product | null;
   currentUser?: { name: string } | null;
@@ -56,6 +57,7 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   onClose,
   onSave,
   products,
+  workOrders = [],
   initialType = 'IN',
   preselectedProduct = null,
   currentUser = null,
@@ -63,6 +65,9 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   const [type, setType] = useState<MovementType>(initialType);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [productSearch, setProductSearch] = useState('');
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string>('');
+  const [osSearchTerm, setOsSearchTerm] = useState('');
+  const [showOsSelector, setShowOsSelector] = useState(false);
   const [quantity, setQuantity] = useState('1');
   const [unitPrice, setUnitPrice] = useState('');
   const [reason, setReason] = useState('');
@@ -79,6 +84,9 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setType(initialType);
+      setSelectedWorkOrderId('');
+      setOsSearchTerm('');
+      setShowOsSelector(false);
       setResponsible(currentUser?.name || 'Almoxarife / Técnico');
       const targetProd = preselectedProduct || (products.length > 0 ? products[0] : null);
       if (targetProd) {
@@ -113,15 +121,15 @@ export const MovementModal: React.FC<MovementModalProps> = ({
     setType(newType);
     setReason(
       newType === 'IN'
-        ? 'Compra / Reposição de Sobressalentes'
+        ? selectedWorkOrderId ? 'Devolução de Sobra de O.S.' : 'Compra / Reposição de Sobressalentes'
         : 'Aplicação em O.S. Preventiva'
     );
     const selectedProd = products.find((p) => p.id === selectedProductId);
     if (selectedProd) {
       setUnitPrice(String(selectedProd.costPrice || 0));
-      if (newType === 'IN' && selectedProd.supplier) {
+      if (newType === 'IN' && selectedProd.supplier && !selectedWorkOrderId) {
         setContactName(selectedProd.supplier);
-      } else if (newType === 'OUT' && selectedProd.equipmentTag) {
+      } else if (newType === 'OUT' && selectedProd.equipmentTag && !selectedWorkOrderId) {
         setContactName(`TAG: ${selectedProd.equipmentTag}`);
       }
     }
@@ -130,12 +138,63 @@ export const MovementModal: React.FC<MovementModalProps> = ({
   const handleProductSelect = (prod: Product) => {
     setSelectedProductId(prod.id);
     setUnitPrice(String(prod.costPrice || 0));
-    if (type === 'IN' && prod.supplier) {
+    if (type === 'IN' && prod.supplier && !selectedWorkOrderId) {
       setContactName(prod.supplier);
-    } else if (type === 'OUT' && prod.equipmentTag) {
+    } else if (type === 'OUT' && prod.equipmentTag && !selectedWorkOrderId) {
       setContactName(`TAG: ${prod.equipmentTag}`);
     }
   };
+
+  // Handler for selecting a Work Order
+  const handleSelectWorkOrder = (wo: WorkOrder | null) => {
+    if (!wo) {
+      setSelectedWorkOrderId('');
+      return;
+    }
+
+    setSelectedWorkOrderId(wo.id);
+    setDocumentNumber(wo.osNumber);
+    setResponsible(wo.requesterName);
+    setContactName(
+      `Local: ${wo.operationalArea || 'Geral'}${wo.equipmentTag ? ` | TAG: ${wo.equipmentTag}` : ''}`
+    );
+
+    if (type === 'IN') {
+      setReason('Devolução de Sobra de O.S.');
+      setNotes(`Devolução de material referente à O.S. ${wo.osNumber} (${wo.application}).`);
+    } else {
+      setReason(`Aplicação em O.S. ${wo.serviceType || 'Industrial'}`);
+      setNotes(`Baixa de material para a O.S. ${wo.osNumber} - ${wo.application}`);
+    }
+
+    // If the work order has items, select the first one if current product isn't in it
+    if (wo.items && wo.items.length > 0) {
+      const isAlreadyIn = wo.items.some((i) => i.productId === selectedProductId);
+      if (!isAlreadyIn) {
+        const firstItem = wo.items[0];
+        const matchProd = products.find((p) => p.id === firstItem.productId || p.code === firstItem.productCode);
+        if (matchProd) {
+          handleProductSelect(matchProd);
+        }
+      }
+    }
+  };
+
+  const selectedWorkOrder = workOrders.find((w) => w.id === selectedWorkOrderId);
+
+  // Filtered work orders for search
+  const filteredWorkOrders = workOrders.filter((wo) => {
+    if (!osSearchTerm) return true;
+    const q = osSearchTerm.toLowerCase();
+    return (
+      wo.osNumber.toLowerCase().includes(q) ||
+      wo.requesterName.toLowerCase().includes(q) ||
+      wo.application.toLowerCase().includes(q) ||
+      (wo.operationalArea && wo.operationalArea.toLowerCase().includes(q)) ||
+      (wo.equipmentTag && wo.equipmentTag.toLowerCase().includes(q)) ||
+      wo.items.some((it) => it.productName.toLowerCase().includes(q) || it.productCode.toLowerCase().includes(q))
+    );
+  });
 
   const handleBarcodeScan = (scannedCode: string) => {
     setIsScannerOpen(false);
@@ -247,8 +306,8 @@ export const MovementModal: React.FC<MovementModalProps> = ({
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {type === 'IN'
-                    ? 'Recebimento de compra, retorno de usinagem ou devolução de sobra'
-                    : 'Baixa de peças para Ordens de Serviço, máquinas ou reformas'}
+                    ? 'Recebimento de compra, reposição de estoque ou devolução de sobra'
+                    : 'Baixa de peças para Ordens de Serviço, estações ou manutenções'}
                 </p>
               </div>
             </div>
@@ -300,6 +359,145 @@ export const MovementModal: React.FC<MovementModalProps> = ({
               </div>
             )}
 
+            {/* Quick Link with Existing Work Order (O.S.) */}
+            {workOrders && workOrders.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {type === 'OUT'
+                        ? '🔍 Vincular Baixa a uma O.S. Existente (Opcional)'
+                        : '🔍 Devolução de Sobra de uma O.S. (Opcional)'}
+                    </span>
+                  </div>
+                  {selectedWorkOrder ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectWorkOrder(null)}
+                      className="text-[11px] font-bold text-red-600 hover:text-red-700 dark:text-red-400"
+                    >
+                      Desvincular O.S.
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowOsSelector(!showOsSelector)}
+                      className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+                    >
+                      {showOsSelector ? 'Ocultar Busca' : 'Pesquisar O.S.'}
+                    </button>
+                  )}
+                </div>
+
+                {/* OS Search and Select dropdown */}
+                {showOsSelector && !selectedWorkOrder && (
+                  <div className="space-y-2 pt-1">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Buscar O.S. por número (ex: OS-2026-0001), solicitante, local ou material..."
+                        value={osSearchTerm}
+                        onChange={(e) => setOsSearchTerm(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div className="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+                      {filteredWorkOrders.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-slate-400">
+                          Nenhuma O.S. encontrada para "{osSearchTerm}".
+                        </div>
+                      ) : (
+                        filteredWorkOrders.slice(0, 8).map((wo) => (
+                          <div
+                            key={wo.id}
+                            onClick={() => {
+                              handleSelectWorkOrder(wo);
+                              setShowOsSelector(false);
+                            }}
+                            className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors flex items-center justify-between gap-2 text-xs"
+                          >
+                            <div>
+                              <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{wo.osNumber}</span>
+                                <span>• {wo.application}</span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                                <span>{wo.operationalArea || 'Geral'}</span>
+                                <span>• Solicitante: {wo.requesterName}</span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold shrink-0">
+                              {wo.items.length} itens
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Work Order Banner with fast item selector chips */}
+                {selectedWorkOrder && (
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 space-y-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                          {selectedWorkOrder.osNumber}
+                        </span>
+                        <span className="text-slate-600 dark:text-slate-300 font-medium">
+                          {selectedWorkOrder.application}
+                        </span>
+                        {selectedWorkOrder.operationalArea && (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                            {selectedWorkOrder.operationalArea}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Solicitante: <strong>{selectedWorkOrder.requesterName}</strong>
+                      </span>
+                    </div>
+
+                    {/* Quick Pick Item Chips from this OS */}
+                    {selectedWorkOrder.items && selectedWorkOrder.items.length > 0 && (
+                      <div className="pt-1.5 border-t border-slate-100 dark:border-slate-700/80">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                          Materiais desta O.S. (Clique para selecionar rapidamente):
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedWorkOrder.items.map((it) => {
+                            const isMatch = selectedProductId === it.productId;
+                            return (
+                              <button
+                                key={it.productId}
+                                type="button"
+                                onClick={() => {
+                                  const prod = products.find((p) => p.id === it.productId || p.code === it.productCode);
+                                  if (prod) handleProductSelect(prod);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all ${
+                                  isMatch
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                <Package className="w-3 h-3" />
+                                <span>{it.productName.split('(')[0]}</span>
+                                <span className="font-mono text-[10px] opacity-80">({it.quantity} {it.unit || 'UN'})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Product Selector */}
             <div>
               <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">
@@ -312,7 +510,7 @@ export const MovementModal: React.FC<MovementModalProps> = ({
                   <input
                     id="movement-product-search-input"
                     type="text"
-                    placeholder="Buscar por nome, SKU, TAG de máquina ou código de barras..."
+                    placeholder="Buscar por nome, SKU, TAG operacional ou código de barras..."
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
@@ -364,11 +562,11 @@ export const MovementModal: React.FC<MovementModalProps> = ({
                         <Package className="w-5 h-5" />
                       </div>
                     )}
-                    <div>
-                      <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm break-words whitespace-normal">
                         {currentProduct.name}
                       </div>
-                      <div className="text-slate-400 text-[11px] flex items-center gap-1.5 mt-0.5">
+                      <div className="text-slate-400 text-[11px] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 whitespace-normal break-words">
                         <span className="font-mono">{currentProduct.code}</span>
                         <span>•</span>
                         <span>{currentProduct.category}</span>
@@ -376,6 +574,12 @@ export const MovementModal: React.FC<MovementModalProps> = ({
                           <>
                             <span>•</span>
                             <span>{currentProduct.location}</span>
+                          </>
+                        )}
+                        {currentProduct.supplier && (
+                          <>
+                            <span>•</span>
+                            <span className="text-slate-500 dark:text-slate-400 break-words">{currentProduct.supplier}</span>
                           </>
                         )}
                         {currentProduct.equipmentTag && (

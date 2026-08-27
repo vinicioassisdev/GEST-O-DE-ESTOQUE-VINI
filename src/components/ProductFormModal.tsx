@@ -45,20 +45,18 @@ const COMMON_UNITS: { value: ProductUnit; label: string }[] = [
 ];
 
 const SUGGESTED_MAINTENANCE_CATEGORIES = [
-  'Bombas & Recalque',
-  'Válvulas & Registros',
-  'Tratamento de Água & Químicos',
-  'Membranas & Filtros (Osmose/Areia)',
-  'Tubulações & Conexões (PVC/PEAD/FF)',
-  'Rolamentos & Mancais',
-  'Elétrica & Painéis de Comando',
-  'Motores & Inversores',
+  'Mecânica',
+  'Elétrica',
+  'Pneumática',
+  'Hidráulica',
   'Instrumentação & Sensores',
-  'Vedações & Selos Mecânicos',
-  'Fixação & Parafusos Inox',
-  'EPI & Segurança Operacional',
+  'Rolamentos & Mancais',
+  'Vedações & Selos',
+  'Fixação & Parafusos',
+  'EPI & Segurança',
   'Ferramentas & Acessórios',
-  'Outros Sobressalentes',
+  'Usinagem & Caldeiraria',
+  'Outros',
 ];
 
 // Helper to compress images client-side into lightweight base64
@@ -124,13 +122,13 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     equipmentTag: '',
     criticality: 'LOW' as MaintenanceCriticality,
     initialStock: '0',
-    minStock: '2',
+    minStock: '0',
     maxStock: '',
     costPrice: '',
     sellingPrice: '',
     supplier: '',
     location: '',
-    responsible: 'Almoxarife / PCM',
+    responsible: '',
   });
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -162,7 +160,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         sellingPrice: String(productToEdit.sellingPrice || productToEdit.costPrice || ''),
         supplier: productToEdit.supplier || '',
         location: productToEdit.location || '',
-        responsible: 'Almoxarife / PCM',
+        responsible: '',
       });
       setShowUrlInput(Boolean(productToEdit.imageUrl && productToEdit.imageUrl.startsWith('http')));
     } else {
@@ -177,13 +175,13 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         equipmentTag: '',
         criticality: 'LOW',
         initialStock: '0',
-        minStock: '2',
+        minStock: '0',
         maxStock: '',
         costPrice: '',
         sellingPrice: '',
         supplier: '',
         location: '',
-        responsible: 'Almoxarife / PCM',
+        responsible: '',
       });
       setShowUrlInput(false);
     }
@@ -539,14 +537,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     <input
                       id="product-equipment-tag-input"
                       type="text"
-                      placeholder="Ex: BOM-01 ETA, DOS-02 ETE, POÇO 01..."
+                      placeholder="Ex: BOM-01, MTR-02, COMP-01, LINHA-01..."
                       value={formData.equipmentTag}
                       onChange={(e) => setFormData({ ...formData, equipmentTag: e.target.value })}
                       className="w-full pl-9 pr-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 transition-all"
                     />
                   </div>
                   <span className="text-[10px] text-slate-400 block mt-1">
-                    Ajuda o técnico a localizar o sobressalente por TAG operacional ou estação.
+                    Facilita a localização do sobressalente por TAG operacional ou equipamento.
                   </span>
                 </div>
 
@@ -562,9 +560,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     }
                     className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
                   >
-                    <option value="HIGH">🔴 Alta (Crítica A - Risco de Interrupção de Abastecimento/Tratamento)</option>
+                    <option value="HIGH">🔴 Alta (Crítica A - Parada de Linha / Processo / Produção)</option>
                     <option value="MEDIUM">🟡 Média (Importante B - Impacto Parcial / Com Redundância)</option>
-                    <option value="LOW">⚪ Baixa (Geral C - Consumo / Sem Interrupção)</option>
+                    <option value="LOW">⚪ Baixa (Geral C - Consumo / Sem Parada)</option>
                   </select>
                   <span className="text-[10px] text-slate-400 block mt-1">
                     Peças críticas geram alertas prioritários de reposição no almoxarifado.

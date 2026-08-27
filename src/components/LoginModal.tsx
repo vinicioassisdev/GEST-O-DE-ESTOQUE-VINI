@@ -284,52 +284,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               )}
             </button>
 
-            {/* Quick Demo Logins Helper */}
+            {/* Quick Access Helper */}
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
               <span className="text-[11px] font-semibold text-slate-400 block mb-2 text-center uppercase tracking-wider">
-                Acessos Rápidos do Sistema:
+                Acessos Padrão do Sistema:
               </span>
-              <div className="grid grid-cols-2 gap-1.5 text-xs">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('geral', 'geral123')}
-                  className="p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-medium text-left border border-indigo-200/80 dark:border-indigo-800/80 transition-colors shadow-xs"
+                  onClick={() => handleQuickLogin('admin', 'admin123')}
+                  className="p-3 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-medium text-left border border-purple-200 dark:border-purple-800 transition-colors shadow-xs"
                 >
-                  <div className="font-bold text-[11px] flex items-center gap-1">
-                    <span>⚡ Acesso Geral</span>
+                  <div className="font-bold text-xs flex items-center gap-1">
+                    <span>👑 Administrador (ADM)</span>
                   </div>
-                  <div className="text-[10px] text-indigo-600/80 font-mono">geral / geral123</div>
-                  <div className="text-[9px] text-indigo-500 mt-0.5">Operações & cadastros completos</div>
+                  <div className="text-[11px] text-purple-600/90 font-mono mt-0.5">admin / admin123</div>
+                  <div className="text-[10px] text-purple-500 mt-1">Acesso completo & cadastros</div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('consulta', 'consulta123')}
-                  className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium text-left border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
+                  className="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium text-left border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
                 >
-                  <div className="font-bold text-[11px] flex items-center gap-1">
-                    <span>🔍 Só Consulta</span>
+                  <div className="font-bold text-xs flex items-center gap-1">
+                    <span>🔍 Consulta</span>
                   </div>
-                  <div className="text-[10px] text-slate-600 dark:text-slate-400 font-mono">consulta / consulta123</div>
-                  <div className="text-[9px] text-slate-500 mt-0.5">Somente leitura e buscas</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('admin', 'admin123')}
-                  className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-medium text-left border border-purple-200/60 dark:border-purple-800/60 transition-colors"
-                >
-                  <div className="font-bold text-[11px]">👑 Gestor (Admin)</div>
-                  <div className="text-[10px] text-purple-600/80 font-mono">admin / admin123</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('carlos.almoxarife', 'almox123')}
-                  className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-medium text-left border border-emerald-200/60 dark:border-emerald-800/60 transition-colors"
-                >
-                  <div className="font-bold text-[11px]">📦 Almoxarife</div>
-                  <div className="text-[10px] text-emerald-600/80 font-mono">carlos.almoxarife</div>
+                  <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono mt-0.5">consulta / consulta123</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Visualização & leitura</div>
                 </button>
               </div>
             </div>

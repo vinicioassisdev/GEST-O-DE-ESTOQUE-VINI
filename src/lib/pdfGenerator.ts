@@ -85,7 +85,7 @@ export function generateWorkOrderPDF(
   
   // Highlighting Operational Area
   doc.setTextColor(2, 132, 199); // sky-600
-  doc.text(workOrder.operationalArea || 'ETA PIRAUNA', margin + 130, currentY + 23);
+  doc.text(workOrder.operationalArea || 'Geral / Fábrica', margin + 130, currentY + 23);
 
   // Info Grid - Row 3: Application / Machine TAG & Sector
   doc.setFontSize(8);
@@ -250,7 +250,7 @@ export function generateWorkOrderPDF(
 
   const colWidth = (pageWidth - margin * 2 - 16) / 3;
 
-  // Sign 1: Solicitante (Heliel)
+  // Sign 1: Solicitante / Executor
   const x1 = margin;
   doc.line(x1, signY + 14, x1 + colWidth, signY + 14);
   doc.setFontSize(8);

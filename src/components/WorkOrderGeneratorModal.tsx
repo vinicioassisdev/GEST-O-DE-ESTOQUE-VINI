@@ -54,21 +54,21 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
   const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
   const [serviceType, setServiceType] = useState<WorkOrder['serviceType']>('CORRETIVA');
   const [priority, setPriority] = useState<WorkOrder['priority']>('ALTA');
-  const [requesterName, setRequesterName] = useState('Heliel');
-  const [requesterRole, setRequesterRole] = useState('Eletromecânico / Técnico de Saneamento');
-  const [authorizedBy, setAuthorizedBy] = useState('Carlos Almoxarife (Supervisão)');
-  const [sector, setSector] = useState('Manutenção Eletromecânica');
-  const [operationalArea, setOperationalArea] = useState('ETA PIRAUNA');
-  const [equipmentTag, setEquipmentTag] = useState('BOM-01');
-  const [application, setApplication] = useState('Bomba Centrífuga de Recalque - Troca de rolamentos e selo mecânico');
-  const [notes, setNotes] = useState('Manutenção preventiva/corretiva por vibração no mancal. Teste de estanqueidade e pressão operacional aprovados.');
+  const [requesterName, setRequesterName] = useState('');
+  const [requesterRole, setRequesterRole] = useState('Mecânico / Técnico');
+  const [authorizedBy, setAuthorizedBy] = useState(currentUser?.name ? `${currentUser.name} (Gestor)` : 'Supervisão / Almoxarifado');
+  const [sector, setSector] = useState('Oficina Mecânica');
+  const [operationalArea, setOperationalArea] = useState(areas.length > 0 ? areas[0].name : '');
+  const [equipmentTag, setEquipmentTag] = useState('');
+  const [application, setApplication] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Set default operational area if areas provided
   useEffect(() => {
     if (areas.length > 0 && !operationalArea) {
       setOperationalArea(areas[0].name);
     }
-  }, [areas]);
+  }, [areas, operationalArea]);
 
   // Items in O.S.
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
@@ -190,7 +190,7 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
     setErrorMsg('');
 
     if (!requesterName.trim()) {
-      setErrorMsg('Informe o nome do funcionário solicitante/executor (ex: Heliel).');
+      setErrorMsg('Informe o nome do funcionário solicitante/executor.');
       return;
     }
     if (!authorizedBy.trim()) {
@@ -488,7 +488,7 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Solicitante / Executor (Ex: Heliel) */}
+                  {/* Solicitante / Executor */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Funcionário Solicitante / Executor *
@@ -497,7 +497,7 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
                       type="text"
                       value={requesterName}
                       onChange={(e) => setRequesterName(e.target.value)}
-                      placeholder="Ex: Heliel (Mecânico)"
+                      placeholder="Ex: João Silva (Mecânico)"
                       required
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500"
                     />
@@ -512,7 +512,7 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
                       type="text"
                       value={authorizedBy}
                       onChange={(e) => setAuthorizedBy(e.target.value)}
-                      placeholder="Ex: Carlos Almoxarife / Supervisor João"
+                      placeholder="Ex: Supervisor de Manutenção / PCM"
                       required
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500"
                     />
@@ -527,7 +527,7 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
                       type="text"
                       value={sector}
                       onChange={(e) => setSector(e.target.value)}
-                      placeholder="Ex: Oficina Mecânica, Moagem, Envase"
+                      placeholder="Ex: Oficina Mecânica, Usinagem, Linha 01"
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100"
                     />
                   </div>
@@ -554,11 +554,11 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  {/* Local Operacional (ETA, ETE, Poços, etc) */}
+                  {/* Local Operacional */}
                   <div className="sm:col-span-5">
                     <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span>Local Operacional / Estação / Poço *</span>
+                      <span>Local Operacional / Unidade *</span>
                     </label>
                     <div className="flex gap-1.5">
                       <div className="relative grow">
@@ -575,13 +575,9 @@ export const WorkOrderGeneratorModal: React.FC<WorkOrderGeneratorModalProps> = (
                             ))
                           ) : (
                             <>
-                              <option value="ETA PIRAUNA">ETA PIRAUNA</option>
-                              <option value="ETE CACHORRO">ETE CACHORRO</option>
-                              <option value="EETE CACHORRO">EETE CACHORRO</option>
-                              <option value="EEAB BOLDRO">EEAB BOLDRO</option>
-                              <option value="DESSALINIZADOR">DESSALINIZADOR</option>
-                              <option value="POÇO 01">POÇO 01</option>
-                              <option value="POÇO 02">POÇO 02</option>
+                              <option value="Geral / Fábrica">Geral / Fábrica</option>
+                              <option value="Oficina Central">Oficina Central</option>
+                              <option value="Almoxarifado Central">Almoxarifado Central</option>
                             </>
                           )}
                         </select>

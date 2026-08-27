@@ -41,7 +41,7 @@ export interface UserRecord {
 export interface OperationalAreaRecord {
   id: string;
   name: string;
-  type: 'ETA' | 'ETE' | 'EETE' | 'EEAB' | 'POCO' | 'DESSALINIZADOR' | 'OFICINA' | 'OUTROS';
+  type: 'SETOR' | 'LINHA' | 'GALPAO' | 'UNIDADE' | 'ESTACAO' | 'OFICINA' | 'ETA' | 'ETE' | 'POCO' | 'OUTROS';
   code?: string;
   description?: string;
   active: boolean;
@@ -143,28 +143,16 @@ const initialSeedData: DBStructure = {
   users: [
     {
       id: 'usr-admin',
-      name: 'Vinício de Assis (Gestor)',
+      name: 'Administrador (Gestor)',
       username: 'admin',
-      email: 'viniciodeassisotlengenharia@gmail.com',
+      email: 'admin@empresa.com.br',
       role: 'ADMIN',
       passwordHash: hashPassword('admin123'),
       active: true,
-      department: 'Gestão Geral & Engenharia',
+      department: 'Administração Geral & Almoxarifado',
       avatarColor: 'bg-purple-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
+      createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
-    },
-    {
-      id: 'usr-geral',
-      name: 'Acesso Geral (Operação Completa)',
-      username: 'geral',
-      email: 'geral@empresa.com.br',
-      role: 'ADMIN',
-      passwordHash: hashPassword('geral123'),
-      active: true,
-      department: 'Operação Geral de Almoxarifado',
-      avatarColor: 'bg-indigo-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
     },
     {
       id: 'usr-consulta',
@@ -174,547 +162,15 @@ const initialSeedData: DBStructure = {
       role: 'CONSULTA',
       passwordHash: hashPassword('consulta123'),
       active: true,
-      department: 'Consulta & Visualização Externa',
+      department: 'Consulta & Visualização',
       avatarColor: 'bg-slate-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'usr-heliel',
-      name: 'Heliel (Mecânica & Manutenção)',
-      username: 'heliel',
-      email: 'heliel.manutencao@empresa.com.br',
-      role: 'MECANICO',
-      passwordHash: hashPassword('heliel123'),
-      active: true,
-      department: 'Manutenção Eletromecânica de Saneamento',
-      avatarColor: 'bg-amber-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'usr-almox',
-      name: 'Carlos Almoxarife',
-      username: 'carlos.almoxarife',
-      email: 'almoxarifado@empresa.com.br',
-      role: 'ALMOXARIFE',
-      passwordHash: hashPassword('almox123'),
-      active: true,
-      department: 'Almoxarifado Central & MRO',
-      avatarColor: 'bg-emerald-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'usr-pcm',
-      name: 'André PCM (Planejamento)',
-      username: 'andre.pcm',
-      email: 'pcm@empresa.com.br',
-      role: 'PCM_ENG',
-      passwordHash: hashPassword('pcm123'),
-      active: true,
-      department: 'Planejamento e Controle de Manutenção',
-      avatarColor: 'bg-blue-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'usr-mec',
-      name: 'Renato Eletromecânico',
-      username: 'renato.mecanico',
-      email: 'manutencao.campo@empresa.com.br',
-      role: 'MECANICO',
-      passwordHash: hashPassword('mec123'),
-      active: true,
-      department: 'Oficina Mecânica & Elétrica',
-      avatarColor: 'bg-amber-600',
-      createdAt: '2026-08-01T08:00:00.000Z',
+      createdAt: new Date().toISOString(),
     },
   ],
-  products: [
-    {
-      id: 'prod-1',
-      code: 'MNT-001',
-      barcode: '7891000100011',
-      name: 'Rolamento Autocompensador 22216 EK',
-      description: 'Rolamento de rolos esféricos para redutor principal de esteira',
-      category: 'Rolamentos & Mancais',
-      unit: 'UN',
-      currentStock: 6,
-      minStock: 2,
-      maxStock: 10,
-      costPrice: 420.0,
-      sellingPrice: 420.0,
-      supplier: 'SKF Distribuidora Brasil',
-      location: 'Gaveteiro M-02 / Prateleira A',
-      equipmentTag: 'EST-CV-01 / RED-04',
-      criticality: 'HIGH',
-      createdAt: '2026-08-01T08:30:00.000Z',
-      updatedAt: '2026-08-20T10:15:00.000Z',
-    },
-    {
-      id: 'prod-2',
-      code: 'MNT-002',
-      barcode: '7891000100028',
-      name: 'Válvula Solenoide Direcional 5/2 Vias 24VCC',
-      description: 'Válvula pneumática para acionamento de cilindro alimentador',
-      category: 'Pneumática',
-      unit: 'UN',
-      currentStock: 1,
-      minStock: 3,
-      maxStock: 8,
-      costPrice: 285.0,
-      sellingPrice: 285.0,
-      supplier: 'Festo Automação Industrial',
-      location: 'Prateleira P-03',
-      equipmentTag: 'PRE-HY-02 / EMB-01',
-      criticality: 'HIGH',
-      createdAt: '2026-08-02T09:00:00.000Z',
-      updatedAt: '2026-08-25T14:20:00.000Z',
-    },
-    {
-      id: 'prod-3',
-      code: 'MNT-003',
-      barcode: '7891000100035',
-      name: 'Óleo Lubrificante Sintético ISO VG 220',
-      description: 'Tambor/Bombona de 20 Litros para engrenagens fechadas e redutores',
-      category: 'Lubrificantes & Químicos',
-      unit: 'L',
-      currentStock: 60,
-      minStock: 20,
-      maxStock: 120,
-      costPrice: 38.5,
-      sellingPrice: 38.5,
-      supplier: 'Mobil Lubrificantes Industriais',
-      location: 'Bacia de Contenção Q-01',
-      equipmentTag: 'Linha Geral de Britagem',
-      criticality: 'MEDIUM',
-      createdAt: '2026-08-03T11:00:00.000Z',
-      updatedAt: '2026-08-22T16:00:00.000Z',
-    },
-    {
-      id: 'prod-4',
-      code: 'MNT-004',
-      barcode: '7891000100042',
-      name: 'Contator de Potência Tripolar 32A 220V (Siemens)',
-      description: 'Contator auxiliar para acionamento de motor bomba d’água',
-      category: 'Elétrica & Painéis',
-      unit: 'UN',
-      currentStock: 0,
-      minStock: 2,
-      maxStock: 6,
-      costPrice: 195.0,
-      sellingPrice: 195.0,
-      supplier: 'Siemens Brasil / Eletro Peças',
-      location: 'Armário Elétrico E-01',
-      equipmentTag: 'CCM-02 / BOM-05',
-      criticality: 'HIGH',
-      createdAt: '2026-08-04T10:30:00.000Z',
-      updatedAt: '2026-08-26T08:00:00.000Z',
-    },
-    {
-      id: 'prod-5',
-      code: 'MNT-005',
-      barcode: '7891000100059',
-      name: 'Correia em V Perfil B-68 Gates',
-      description: 'Correia de transmissão de alta resistência a calor e óleo',
-      category: 'Correias & Polias',
-      unit: 'UN',
-      currentStock: 12,
-      minStock: 4,
-      maxStock: 20,
-      costPrice: 46.0,
-      sellingPrice: 46.0,
-      supplier: 'Gates Transmissões Brasil',
-      location: 'Ganchos Prateleira T-04',
-      equipmentTag: 'EXA-VEN-03 / COM-01',
-      criticality: 'MEDIUM',
-      createdAt: '2026-08-05T13:45:00.000Z',
-      updatedAt: '2026-08-24T11:30:00.000Z',
-    },
-    {
-      id: 'prod-6',
-      code: 'MNT-006',
-      barcode: '7891000100066',
-      name: 'Retentor Radial de Óleo 45x65x10 NBR (Sabó)',
-      description: 'Vedação para eixo de bomba centrífuga',
-      category: 'Vedações & Retentores',
-      unit: 'UN',
-      currentStock: 18,
-      minStock: 5,
-      maxStock: 30,
-      costPrice: 22.8,
-      sellingPrice: 22.8,
-      supplier: 'Sabó Vedação Industrial',
-      location: 'Gaveteiro V-01',
-      equipmentTag: 'BOM-01 a BOM-08',
-      criticality: 'LOW',
-      createdAt: '2026-08-06T15:00:00.000Z',
-      updatedAt: '2026-08-21T09:10:00.000Z',
-    },
-    {
-      id: 'prod-rol-3311',
-      code: 'ROL-3311',
-      barcode: '7891000133110',
-      name: 'Rolamento 3311 (Contato Angular Duplo)',
-      description: 'Rolamento de esferas com duas carreiras 3311 / 5311 55x120x49.2mm',
-      category: 'Rolamentos & Mancais',
-      unit: 'UN',
-      currentStock: 14,
-      minStock: 3,
-      maxStock: 25,
-      costPrice: 380.0,
-      sellingPrice: 380.0,
-      supplier: 'SKF / FAG Rolamentos Brasil',
-      location: 'Gaveteiro R-03 / Prateleira B',
-      equipmentTag: 'BOM-01 a BOM-10 / RED-02',
-      criticality: 'HIGH',
-      createdAt: '2026-08-07T08:00:00.000Z',
-      updatedAt: '2026-08-26T09:00:00.000Z',
-    },
-    {
-      id: 'prod-rol-3310',
-      code: 'ROL-3310',
-      barcode: '7891000133103',
-      name: 'Rolamento 3310 (Contato Angular Duplo)',
-      description: 'Rolamento de esferas com duas carreiras 3310 / 5310 50x110x44.4mm',
-      category: 'Rolamentos & Mancais',
-      unit: 'UN',
-      currentStock: 10,
-      minStock: 2,
-      maxStock: 20,
-      costPrice: 345.0,
-      sellingPrice: 345.0,
-      supplier: 'NSK / SKF Rolamentos',
-      location: 'Gaveteiro R-03 / Prateleira B',
-      equipmentTag: 'BOM-03 / RED-01',
-      criticality: 'HIGH',
-      createdAt: '2026-08-07T08:30:00.000Z',
-      updatedAt: '2026-08-26T09:00:00.000Z',
-    },
-    {
-      id: 'prod-ret-473610',
-      code: 'RET-473610',
-      barcode: '7891000473610',
-      name: 'Retentor 47x36x10 NBR (Vedação Industrial)',
-      description: 'Retentor radial em borracha nitrílica NBR 47x36x10 com mola',
-      category: 'Vedações & Retentores',
-      unit: 'UN',
-      currentStock: 25,
-      minStock: 5,
-      maxStock: 50,
-      costPrice: 32.5,
-      sellingPrice: 32.5,
-      supplier: 'Sabó / Vedabrás Retentores',
-      location: 'Gaveteiro V-02 / Gaveta 4',
-      equipmentTag: 'Bombas Centrífugas & Redutores',
-      criticality: 'MEDIUM',
-      createdAt: '2026-08-08T10:00:00.000Z',
-      updatedAt: '2026-08-26T09:00:00.000Z',
-    },
-    {
-      id: 'prod-selo-mec',
-      code: 'SLM-001',
-      barcode: '7891000000999',
-      name: 'Selo Mecânico 1.3/8" Silício/Silício Viton',
-      description: 'Selo mecânico balanceado de alta durabilidade para bombas de processo',
-      category: 'Vedações & Retentores',
-      unit: 'UN',
-      currentStock: 8,
-      minStock: 2,
-      maxStock: 15,
-      costPrice: 490.0,
-      sellingPrice: 490.0,
-      supplier: 'John Crane / Aesseal Selos',
-      location: 'Armário V-04 (Protegido)',
-      equipmentTag: 'BOM-01 / BOM-02 / BOM-03',
-      criticality: 'HIGH',
-      createdAt: '2026-08-08T11:00:00.000Z',
-      updatedAt: '2026-08-26T09:00:00.000Z',
-    }
-  ],
-  movements: [
-    {
-      id: 'mov-1',
-      productId: 'prod-1',
-      productCode: 'MNT-001',
-      productName: 'Rolamento Autocompensador 22216 EK',
-      type: 'IN',
-      quantity: 8,
-      previousStock: 0,
-      newStock: 8,
-      unitPrice: 420.0,
-      totalPrice: 3360.0,
-      reason: 'Compra / Reposição de Sobressalentes',
-      documentNumber: 'NF-10492',
-      contactName: 'SKF Distribuidora Brasil',
-      responsible: 'Almoxarife Carlos',
-      notes: 'Recebimento de lote para estoque de segurança preventiva',
-      timestamp: '2026-08-01T09:00:00.000Z',
-    },
-    {
-      id: 'mov-2',
-      productId: 'prod-1',
-      productCode: 'MNT-001',
-      productName: 'Rolamento Autocompensador 22216 EK',
-      type: 'OUT',
-      quantity: 2,
-      previousStock: 8,
-      newStock: 6,
-      unitPrice: 420.0,
-      totalPrice: 840.0,
-      reason: 'Aplicação em O.S. Preventiva',
-      documentNumber: 'OS-2026-089',
-      contactName: 'TAG: EST-CV-01 (Esteira Transportadora 1)',
-      responsible: 'Mecânico André / L. Silva',
-      notes: 'Troca preventiva de rolamentos da esteira principal',
-      timestamp: '2026-08-20T10:15:00.000Z',
-    },
-    {
-      id: 'mov-3',
-      productId: 'prod-2',
-      productCode: 'MNT-002',
-      productName: 'Válvula Solenoide Direcional 5/2 Vias 24VCC',
-      type: 'IN',
-      quantity: 3,
-      previousStock: 0,
-      newStock: 3,
-      unitPrice: 285.0,
-      totalPrice: 855.0,
-      reason: 'Compra / Reposição de Sobressalentes',
-      documentNumber: 'NF-10512',
-      contactName: 'Festo Automação Industrial',
-      responsible: 'Almoxarife Carlos',
-      notes: 'Aquisição de sobressalentes pneumáticos para prensas',
-      timestamp: '2026-08-02T10:00:00.000Z',
-    },
-    {
-      id: 'mov-4',
-      productId: 'prod-2',
-      productCode: 'MNT-002',
-      productName: 'Válvula Solenoide Direcional 5/2 Vias 24VCC',
-      type: 'OUT',
-      quantity: 2,
-      previousStock: 3,
-      newStock: 1,
-      unitPrice: 285.0,
-      totalPrice: 570.0,
-      reason: 'Aplicação em O.S. Corretiva (Urgente)',
-      documentNumber: 'OS-2026-114',
-      contactName: 'TAG: PRE-HY-02 (Prensa Hidráulica 2)',
-      responsible: 'Téc. Mecatrônico Marcos',
-      notes: 'Troca imediata por falha na bobina durante o turno produtivo',
-      timestamp: '2026-08-25T14:20:00.000Z',
-    },
-    {
-      id: 'mov-5',
-      productId: 'prod-4',
-      productCode: 'MNT-004',
-      productName: 'Contator de Potência Tripolar 32A 220V (Siemens)',
-      type: 'OUT',
-      quantity: 2,
-      previousStock: 2,
-      newStock: 0,
-      unitPrice: 195.0,
-      totalPrice: 390.0,
-      reason: 'Aplicação em O.S. Corretiva (Urgente)',
-      documentNumber: 'OS-2026-121',
-      contactName: 'TAG: CCM-02 / BOM-05',
-      responsible: 'Eletricista Renato',
-      notes: 'Item esgotado no almoxarifado, requisitada compra urgente',
-      timestamp: '2026-08-26T08:00:00.000Z',
-    }
-  ],
-  workOrders: [
-    {
-      id: 'os-seed-1',
-      osNumber: 'OS-2026-0042',
-      date: '2026-08-26T10:30:00.000Z',
-      serviceType: 'CORRETIVA',
-      application: 'Bomba Centrífuga B-03 (Linha de Envase) - Substituição de rolamentos do mancal e vedação do selo mecânico',
-      equipmentTag: 'BOM-03 / ENV-01',
-      requesterName: 'Heliel',
-      requesterRole: 'Mecânico de Manutenção Industrial',
-      authorizedBy: 'Carlos Almoxarife (Supervisão)',
-      warehouseKeeper: 'Carlos Almoxarife',
-      sector: 'Oficina Mecânica & Linha de Envase',
-      priority: 'ALTA',
-      items: [
-        {
-          productId: 'prod-rol-3311',
-          productCode: 'ROL-3311',
-          productName: 'Rolamento 3311 (Contato Angular Duplo)',
-          quantity: 1,
-          dischargedQuantity: 1,
-          unit: 'UN',
-          unitPrice: 380.0,
-          totalPrice: 380.0,
-          currentStock: 14,
-        },
-        {
-          productId: 'prod-rol-3310',
-          productCode: 'ROL-3310',
-          productName: 'Rolamento 3310 (Contato Angular Duplo)',
-          quantity: 1,
-          dischargedQuantity: 1,
-          unit: 'UN',
-          unitPrice: 345.0,
-          totalPrice: 345.0,
-          currentStock: 10,
-        },
-        {
-          productId: 'prod-ret-473610',
-          productCode: 'RET-473610',
-          productName: 'Retentor 47x36x10 NBR (Vedação Industrial)',
-          quantity: 1,
-          dischargedQuantity: 1,
-          unit: 'UN',
-          unitPrice: 32.5,
-          totalPrice: 32.5,
-          currentStock: 25,
-        },
-        {
-          productId: 'prod-selo-mec',
-          productCode: 'SLM-001',
-          productName: 'Selo Mecânico 1.3/8" Silício/Silício Viton',
-          quantity: 1,
-          dischargedQuantity: 1,
-          unit: 'UN',
-          unitPrice: 490.0,
-          totalPrice: 490.0,
-          currentStock: 8,
-        },
-      ],
-      totalCost: 1247.5,
-      totalQuantity: 4,
-      status: 'CONCLUIDA',
-      notes: 'Manutenção realizada com sucesso após ruído excessivo no mancal dianteiro. Testado sob pressão nominal.',
-      createdAt: '2026-08-26T10:30:00.000Z',
-    },
-    {
-      id: 'os-seed-2',
-      osNumber: 'OS-2026-0043',
-      date: '2026-08-27T08:00:00.000Z',
-      serviceType: 'PREVENTIVA',
-      application: 'Bomba de Recalque ETA Piraúna - Lubrificação e Troca Preventiva de Rolamentos',
-      equipmentTag: 'BOM-01 / ETA-PIR',
-      operationalArea: 'ETA PIRAUNA',
-      requesterName: 'Heliel',
-      requesterRole: 'Mecânico de Manutenção',
-      authorizedBy: 'Carlos Almoxarife (Supervisão)',
-      warehouseKeeper: 'Carlos Almoxarife',
-      sector: 'Oficina Eletromecânica',
-      priority: 'ALTA',
-      items: [
-        {
-          productId: 'prod-1',
-          productCode: 'MNT-001',
-          productName: 'Rolamento Rígido de Esferas 6205 DDU (SKF)',
-          quantity: 2,
-          dischargedQuantity: 0,
-          unit: 'UN',
-          unitPrice: 42.5,
-          totalPrice: 85.0,
-          currentStock: 28,
-        },
-        {
-          productId: 'prod-3',
-          productCode: 'MNT-003',
-          productName: 'Graxa Azul para Rolamentos de Alta Rotação (Mobil Polyrex EM 400g)',
-          quantity: 2,
-          dischargedQuantity: 0,
-          unit: 'UN',
-          unitPrice: 38.0,
-          totalPrice: 76.0,
-          currentStock: 15,
-        },
-      ],
-      totalCost: 161.0,
-      totalQuantity: 4,
-      status: 'ABERTA',
-      notes: 'O.S. emitida e autorizada. Materiais liberados na Guia de Separação. Aguardando baixa física no almoxarifado pelo mecânico.',
-      createdAt: '2026-08-27T08:00:00.000Z',
-    },
-  ],
-  areas: [
-    {
-      id: 'area-eta-pirauna',
-      name: 'ETA PIRAUNA',
-      type: 'ETA',
-      code: 'ETA-PIR',
-      description: 'Estação de Tratamento de Água - Piraúna',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-ete-cachorro',
-      name: 'ETE CACHORRO',
-      type: 'ETE',
-      code: 'ETE-CAC',
-      description: 'Estação de Tratamento de Esgoto - Cachorro',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-eete-cachorro',
-      name: 'EETE CACHORRO',
-      type: 'EETE',
-      code: 'EETE-CAC',
-      description: 'Estação Elevatória de Tratamento de Esgoto - Cachorro',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-eeab-boldro',
-      name: 'EEAB BOLDRO',
-      type: 'EEAB',
-      code: 'EEAB-BOL',
-      description: 'Estação Elevatória de Água Bruta - Boldró',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-dessalinizador',
-      name: 'DESSALINIZADOR',
-      type: 'DESSALINIZADOR',
-      code: 'DES-01',
-      description: 'Unidade Principal de Dessalinização de Água (Osmose Reversa)',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-poco-01',
-      name: 'POÇO 01 - CAPTAÇÃO NORTE',
-      type: 'POCO',
-      code: 'POC-01',
-      description: 'Poço Tubular Profundo de Captação 01',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-poco-02',
-      name: 'POÇO 02 - CAPTAÇÃO SUL',
-      type: 'POCO',
-      code: 'POC-02',
-      description: 'Poço Tubular Profundo de Captação 02',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-poco-03',
-      name: 'POÇO 03 - RESERVA ESTRATÉGICA',
-      type: 'POCO',
-      code: 'POC-03',
-      description: 'Poço Tubular de Reserva Estratégica 03',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-    {
-      id: 'area-oficina-central',
-      name: 'OFICINA MECÂNICA / ALMOXARIFADO',
-      type: 'OFICINA',
-      code: 'OFI-ALM',
-      description: 'Oficina Central de Manutenção e Almoxarifado MRO',
-      active: true,
-      createdAt: '2026-08-01T08:00:00.000Z',
-    },
-  ],
+  products: [],
+  movements: [],
+  workOrders: [],
+  areas: [],
 };
 
 // Helper to strip passwordHash from user object
@@ -732,41 +188,13 @@ function readDB(): DBStructure {
     }
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const data = JSON.parse(raw);
-    if (!data.products) data.products = [];
-    if (!data.movements) data.movements = [];
-    if (!data.workOrders) data.workOrders = initialSeedData.workOrders || [];
-    
-    // Ensure seed products (like Rolamento 3311, Rolamento 3310, Retentor 47x36x10, Selo Mecanico) exist
-    for (const seedProd of initialSeedData.products) {
-      if (!data.products.some((p: { id: string; code: string }) => p.id === seedProd.id || p.code === seedProd.code)) {
-        data.products.push(seedProd);
-      }
-    }
-
-    // Ensure areas exist
-    if (!data.areas || !Array.isArray(data.areas) || data.areas.length === 0) {
-      data.areas = initialSeedData.areas;
-    } else {
-      for (const seedArea of initialSeedData.areas) {
-        if (!data.areas.some((a: OperationalAreaRecord) => a.id === seedArea.id || a.name.toUpperCase() === seedArea.name.toUpperCase())) {
-          data.areas.push(seedArea);
-        }
-      }
-    }
-
+    if (!data.products || !Array.isArray(data.products)) data.products = [];
+    if (!data.movements || !Array.isArray(data.movements)) data.movements = [];
+    if (!data.workOrders || !Array.isArray(data.workOrders)) data.workOrders = [];
+    if (!data.areas || !Array.isArray(data.areas)) data.areas = [];
     if (!data.users || !Array.isArray(data.users) || data.users.length === 0) {
       data.users = initialSeedData.users;
-    } else {
-      // Ensure seed users like 'geral', 'consulta', 'heliel' exist
-      for (const seedUser of initialSeedData.users) {
-        if (!data.users.some((u: UserRecord) => u.username === seedUser.username)) {
-          data.users.push(seedUser);
-        }
-      }
     }
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-    } catch {}
     return data;
   } catch (err) {
     console.error('Error reading database file, returning fallback data:', err);
@@ -1039,7 +467,7 @@ app.post('/api/areas', (req, res) => {
   const { name, type, code, description } = req.body;
 
   if (!name || !String(name).trim()) {
-    return res.status(400).json({ error: 'Nome do local/área é obrigatório (ex: ETA PIRAUNA, ETE CACHORRO).' });
+    return res.status(400).json({ error: 'Nome do local/área é obrigatório (ex: Linha 01, Galpão A).' });
   }
 
   const db = readDB();
@@ -1051,8 +479,8 @@ app.post('/api/areas', (req, res) => {
   }
 
   const now = new Date().toISOString();
-  const validTypes = ['ETA', 'ETE', 'EETE', 'EEAB', 'POCO', 'DESSALINIZADOR', 'OFICINA', 'OUTROS'];
-  const assignedType = (type && validTypes.includes(type) ? type : 'OUTROS') as OperationalAreaRecord['type'];
+  const validTypes = ['SETOR', 'LINHA', 'GALPAO', 'UNIDADE', 'ESTACAO', 'OFICINA', 'ETA', 'ETE', 'POCO', 'OUTROS'];
+  const assignedType = (type && validTypes.includes(type) ? type : 'SETOR') as OperationalAreaRecord['type'];
 
   const newArea: OperationalAreaRecord = {
     id: `area-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -1093,7 +521,7 @@ app.put('/api/areas/:id', (req, res) => {
   }
 
   if (type) {
-    const validTypes = ['ETA', 'ETE', 'EETE', 'EEAB', 'POCO', 'DESSALINIZADOR', 'OFICINA', 'OUTROS'];
+    const validTypes = ['SETOR', 'LINHA', 'GALPAO', 'UNIDADE', 'ESTACAO', 'OFICINA', 'ETA', 'ETE', 'POCO', 'OUTROS'];
     if (validTypes.includes(type)) {
       area.type = type as OperationalAreaRecord['type'];
     }
@@ -1880,13 +1308,22 @@ app.delete('/api/work-orders/:id', (req, res) => {
   res.json({ success: true, removedWorkOrder: removed });
 });
 
-// Reset to initial sample data
+// Reset to factory zero (clean base)
 app.post('/api/inventory/reset-sample', (req, res) => {
-  writeDB(initialSeedData);
+  const cleanDB: DBStructure = {
+    users: initialSeedData.users,
+    products: [],
+    movements: [],
+    workOrders: [],
+    areas: [],
+  };
+  writeDB(cleanDB);
   res.json({
     success: true,
-    products: initialSeedData.products,
-    movements: initialSeedData.movements,
+    products: [],
+    movements: [],
+    workOrders: [],
+    areas: [],
     users: initialSeedData.users.map(sanitizeUser),
   });
 });

@@ -404,11 +404,23 @@ export default function App() {
       const res = await fetch('/api/inventory/reset-sample', { method: 'POST' });
       if (!res.ok) throw new Error('Falha ao resetar no servidor.');
       const data = await res.json();
-      setProducts(data.products || []);
-      setMovements(data.movements || []);
-      showToast('Dados de demonstração restaurados!', 'success');
+      setProducts([]);
+      setMovements([]);
+      setWorkOrders([]);
+      setAreas([]);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      } catch {}
+      showToast('Sistema 100% zerado e pronto para novos cadastros!', 'success');
     } catch (err) {
-      showToast('Erro ao resetar base', 'error');
+      setProducts([]);
+      setMovements([]);
+      setWorkOrders([]);
+      setAreas([]);
+      try {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      } catch {}
+      showToast('Sistema zerado localmente', 'info');
     }
   };
 

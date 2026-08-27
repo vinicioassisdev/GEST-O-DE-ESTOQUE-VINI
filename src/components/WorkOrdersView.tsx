@@ -261,7 +261,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por Nº da O.S. (ex: OS-2026-0043), Heliel, Bomba B-03, Rolamento, Retentor..."
+            placeholder="Buscar por Nº da O.S. (ex: OS-2026-0001), solicitante, máquina, peça..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400"
@@ -288,24 +288,18 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
             onChange={(e) => setSelectedArea(e.target.value)}
             className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 font-medium"
           >
-            <option value="ALL">📍 Todos os Locais / Estações</option>
-            {areas && areas.length > 0 ? (
-              areas.map((ar) => (
-                <option key={ar.id} value={ar.name}>
-                  {ar.name}
-                </option>
-              ))
-            ) : (
-              <>
-                <option value="ETA PIRAUNA">ETA PIRAUNA</option>
-                <option value="ETE CACHORRO">ETE CACHORRO</option>
-                <option value="EETE CACHORRO">EETE CACHORRO</option>
-                <option value="EEAB BOLDRO">EEAB BOLDRO</option>
-                <option value="DESSALINIZADOR">DESSALINIZADOR</option>
-                <option value="POÇO 01">POÇO 01</option>
-                <option value="POÇO 02">POÇO 02</option>
-              </>
-            )}
+            <option value="ALL">📍 Todos os Locais / Unidades</option>
+            {areas && areas.length > 0
+              ? areas.map((ar) => (
+                  <option key={ar.id} value={ar.name}>
+                    {ar.name}
+                  </option>
+                ))
+              : Array.from(new Set(workOrders.map((wo) => wo.operationalArea).filter(Boolean))).map((areaName) => (
+                  <option key={areaName} value={areaName}>
+                    {areaName}
+                  </option>
+                ))}
           </select>
 
           {/* Filter by Service Type */}

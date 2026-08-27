@@ -30,54 +30,68 @@ export const AREA_TYPE_CONFIG: Record<
   OperationalAreaType,
   { label: string; bg: string; text: string; border: string; icon: string }
 > = {
-  ETA: {
-    label: 'ETA (Água)',
+  SETOR: {
+    label: 'Setor / Departamento',
     bg: 'bg-blue-50 dark:bg-blue-950/60',
     text: 'text-blue-700 dark:text-blue-300',
     border: 'border-blue-200 dark:border-blue-800',
-    icon: '💧',
+    icon: '🏢',
   },
-  ETE: {
-    label: 'ETE (Esgoto)',
-    bg: 'bg-teal-50 dark:bg-teal-950/60',
-    text: 'text-teal-700 dark:text-teal-300',
-    border: 'border-teal-200 dark:border-teal-800',
-    icon: '🧪',
+  LINHA: {
+    label: 'Linha de Produção / Máquina',
+    bg: 'bg-indigo-50 dark:bg-indigo-950/60',
+    text: 'text-indigo-700 dark:text-indigo-300',
+    border: 'border-indigo-200 dark:border-indigo-800',
+    icon: '⚙️',
   },
-  EETE: {
-    label: 'EETE (Elevatória Esgoto)',
+  GALPAO: {
+    label: 'Galpão / Pavilhão / Armazém',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    icon: '📦',
+  },
+  UNIDADE: {
+    label: 'Unidade / Filial / Planta',
+    bg: 'bg-purple-50 dark:bg-purple-950/60',
+    text: 'text-purple-700 dark:text-purple-300',
+    border: 'border-purple-200 dark:border-purple-800',
+    icon: '🏭',
+  },
+  ESTACAO: {
+    label: 'Estação / Usina / Instalação',
     bg: 'bg-cyan-50 dark:bg-cyan-950/60',
     text: 'text-cyan-700 dark:text-cyan-300',
     border: 'border-cyan-200 dark:border-cyan-800',
     icon: '⚡',
   },
-  EEAB: {
-    label: 'EEAB (Elevatória Água Bruta)',
-    bg: 'bg-indigo-50 dark:bg-indigo-950/60',
-    text: 'text-indigo-700 dark:text-indigo-300',
-    border: 'border-indigo-200 dark:border-indigo-800',
-    icon: '🌊',
-  },
-  DESSALINIZADOR: {
-    label: 'Dessalinizador (Osmose)',
-    bg: 'bg-sky-50 dark:bg-sky-950/60',
-    text: 'text-sky-700 dark:text-sky-300',
-    border: 'border-sky-200 dark:border-sky-800',
-    icon: '🧊',
-  },
-  POCO: {
-    label: 'Poço Tubular',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/60',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    icon: '🚰',
-  },
   OFICINA: {
-    label: 'Oficina / Almoxarifado',
+    label: 'Oficina / Manutenção',
     bg: 'bg-amber-50 dark:bg-amber-950/60',
     text: 'text-amber-700 dark:text-amber-300',
     border: 'border-amber-200 dark:border-amber-800',
     icon: '🛠️',
+  },
+  ETA: {
+    label: 'Tratamento de Água / Efluentes',
+    bg: 'bg-sky-50 dark:bg-sky-950/60',
+    text: 'text-sky-700 dark:text-sky-300',
+    border: 'border-sky-200 dark:border-sky-800',
+    icon: '💧',
+  },
+  ETE: {
+    label: 'Tratamento de Esgoto / Resíduos',
+    bg: 'bg-teal-50 dark:bg-teal-950/60',
+    text: 'text-teal-700 dark:text-teal-300',
+    border: 'border-teal-200 dark:border-teal-800',
+    icon: '🧪',
+  },
+  POCO: {
+    label: 'Poço / Captação',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    icon: '🚰',
   },
   OUTROS: {
     label: 'Outro Local Operacional',
@@ -103,7 +117,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [type, setType] = useState<OperationalAreaType>('ETA');
+  const [type, setType] = useState<OperationalAreaType>('SETOR');
   const [code, setCode] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,7 +130,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
     setIsEditing(false);
     setEditingId(null);
     setName('');
-    setType('ETA');
+    setType('SETOR');
     setCode('');
     setDescription('');
     setErrorMessage('');
@@ -236,7 +250,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-slate-300">
-                Gerencie Estações de Tratamento (ETA, ETE), Elevatórias (EETE, EEAB), Dessalinizador e Poços para vincular às Ordens de Serviço
+                Cadastre e gerencie setores, linhas de produção, galpões, unidades ou instalações operacionais
               </p>
             </div>
           </div>
@@ -265,7 +279,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                 ) : (
                   <>
                     <Plus className="w-3.5 h-3.5 text-emerald-600" />
-                    Novo Local / Estação / Poço
+                    Novo Local / Setor / Linha
                   </>
                 )}
               </h3>
@@ -291,19 +305,19 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Nome do Local / Estação *
+                  Nome do Local / Setor / Unidade *
                 </label>
                 <input
                   id="area-name-input"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: ETA PIRAUNA, ETE CACHORRO, POÇO 01..."
+                  placeholder="Ex: Linha de Produção 01, Galpão A, Almoxarifado Central..."
                   required
                   className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold uppercase text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  Exemplos: ETA PIRAUNA, ETE CACHORRO, EETE CACHORRO, EEAB BOLDRO, DESSALINIZADOR, POÇO 01, POÇO 02
+                  Exemplos: Setor de Montagem, Linha 02, Oficina Mecânica, Galpão Norte, Caldeira Principal
                 </p>
               </div>
 
@@ -318,13 +332,15 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                     onChange={(e) => setType(e.target.value as OperationalAreaType)}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-slate-100"
                   >
-                    <option value="ETA">💧 ETA (Tratamento Água)</option>
-                    <option value="ETE">🧪 ETE (Tratamento Esgoto)</option>
-                    <option value="EETE">⚡ EETE (Elevatória Esgoto)</option>
-                    <option value="EEAB">🌊 EEAB (Elevatória Água Bruta)</option>
-                    <option value="DESSALINIZADOR">🧊 Dessalinizador</option>
-                    <option value="POCO">🚰 Poço Tubular Profundo</option>
-                    <option value="OFICINA">🛠️ Oficina / Almoxarifado</option>
+                    <option value="SETOR">🏢 Setor / Departamento</option>
+                    <option value="LINHA">⚙️ Linha de Produção / Máquina</option>
+                    <option value="GALPAO">📦 Galpão / Armazém</option>
+                    <option value="UNIDADE">🏭 Unidade / Filial</option>
+                    <option value="ESTACAO">⚡ Estação / Usina</option>
+                    <option value="OFICINA">🛠️ Oficina / Manutenção</option>
+                    <option value="ETA">💧 Tratamento de Água / Efluentes</option>
+                    <option value="ETE">🧪 Tratamento de Esgoto / Resíduos</option>
+                    <option value="POCO">🚰 Poço / Captação</option>
                     <option value="OUTROS">📍 Outro Local Operacional</option>
                   </select>
                 </div>
@@ -338,7 +354,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                     type="text"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Ex: ETA-PIR, POC-01"
+                    placeholder="Ex: LIN-01, GALP-A, OFI-01"
                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono uppercase text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -353,7 +369,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Informações adicionais, ponto de referência ou equipamentos principais..."
+                  placeholder="Informações adicionais, ponto de referência ou máquinas do local..."
                   className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 resize-none"
                 />
               </div>
@@ -391,7 +407,7 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                 <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Buscar local (ex: Pirauna, Cachorro, Boldro, Poço)..."
+                  placeholder="Buscar local (ex: Linha 01, Galpão A, Oficina)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100"
@@ -404,13 +420,15 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                 className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200"
               >
                 <option value="ALL">Todos os Tipos ({areas.length})</option>
-                <option value="ETA">ETA</option>
-                <option value="ETE">ETE</option>
-                <option value="EETE">EETE</option>
-                <option value="EEAB">EEAB</option>
-                <option value="DESSALINIZADOR">Dessalinizador</option>
-                <option value="POCO">Poços</option>
+                <option value="SETOR">Setor / Depto</option>
+                <option value="LINHA">Linha / Máquina</option>
+                <option value="GALPAO">Galpão / Armazém</option>
+                <option value="UNIDADE">Unidade / Planta</option>
+                <option value="ESTACAO">Estação / Usina</option>
                 <option value="OFICINA">Oficina</option>
+                <option value="ETA">Tratamento Água</option>
+                <option value="ETE">Tratamento Esgoto</option>
+                <option value="POCO">Poço</option>
                 <option value="OUTROS">Outros</option>
               </select>
             </div>
@@ -421,10 +439,10 @@ export const AreasManagementModal: React.FC<AreasManagementModalProps> = ({
                 <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                   <MapPin className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                    Nenhum local encontrado
+                    Nenhum local cadastrado
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Utilize o formulário ao lado para cadastrar sua primeira área/estação.
+                    Utilize o formulário ao lado para cadastrar suas áreas, linhas de produção ou setores.
                   </p>
                 </div>
               ) : (

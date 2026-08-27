@@ -2,13 +2,23 @@ export type MovementType = 'IN' | 'OUT' | 'ADJUST';
 
 export type MaintenanceCriticality = 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type OperationalAreaType = 'ETA' | 'ETE' | 'EETE' | 'EEAB' | 'POCO' | 'DESSALINIZADOR' | 'OFICINA' | 'OUTROS';
+export type OperationalAreaType =
+  | 'SETOR'
+  | 'LINHA'
+  | 'GALPAO'
+  | 'UNIDADE'
+  | 'ESTACAO'
+  | 'OFICINA'
+  | 'ETA'
+  | 'ETE'
+  | 'POCO'
+  | 'OUTROS';
 
 export interface OperationalArea {
   id: string;
-  name: string; // Ex: 'ETA PIRAUNA', 'ETE CACHORRO', 'EETE CACHORRO', 'EEAB BOLDRO', 'DESSALINIZADOR', 'POÇO 01'
+  name: string; // Ex: 'Linha 01', 'Galpão A', 'Oficina Central', 'Setor de Envase'
   type: OperationalAreaType;
-  code?: string; // Ex: 'ETA-PIR', 'ETE-CAC', 'EEAB-BOL'
+  code?: string; // Ex: 'LIN-01', 'GALP-A', 'OFI-01'
   description?: string;
   active: boolean;
   createdAt: string;
@@ -46,8 +56,8 @@ export interface WorkOrder {
   serviceType: 'CORRETIVA' | 'PREVENTIVA' | 'PREDITIVA' | 'REFORMA' | 'EMERGENCIAL' | 'INSTALACAO' | 'OUTROS';
   application: string; // Aplicação / Equipamento / TAG
   equipmentTag?: string; // TAG da máquina
-  operationalArea?: string; // Local / Área Operacional (Ex: ETA PIRAUNA, ETE CACHORRO, POÇO 01)
-  requesterName: string; // Ex: Heliel
+  operationalArea?: string; // Local / Área Operacional (Ex: Linha 01, Galpão A, Almoxarifado)
+  requesterName: string; // Ex: Carlos Silva (Mecânico)
   requesterRole?: string; // Mecânico / Técnico
   authorizedBy: string; // Supervisor / Almoxarife que autorizou
   warehouseKeeper?: string; // Almoxarife que fez a entrega
@@ -111,8 +121,8 @@ export interface Product {
   category: string; // Mecânica, Elétrica, Pneumática, etc.
   unit: ProductUnit;
   equipmentTag?: string; // TAG do equipamento/conjunto operacional (ex: BOM-01, MTR-02, DOS-01)
-  operationalArea?: string; // Área/Estação/Poço de destinação principal (Ex: ETA PIRAUNA, ETE CACHORRO, POÇO 01)
-  criticality?: MaintenanceCriticality; // HIGH = Crítica (Parada de Estação / Falta d'Água), MEDIUM = Importante, LOW = Baixa
+  operationalArea?: string; // Área/Setor de destinação principal (Ex: Linha 01, Galpão A)
+  criticality?: MaintenanceCriticality; // HIGH = Crítica (Parada de Linha / Fábrica), MEDIUM = Importante, LOW = Baixa
   currentStock: number;
   minStock: number; // Estoque de segurança / Ponto de pedido
   maxStock?: number;

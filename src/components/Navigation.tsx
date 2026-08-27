@@ -35,7 +35,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <>
       {/* Desktop Tabs Bar */}
-      <div className="hidden sm:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+      <div className="hidden sm:block w-full px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 mt-6">
         <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-px">
           {/* Tab 1: Inventário Geral */}
           <button
@@ -50,21 +50,6 @@ export const Navigation: React.FC<NavigationProps> = ({
           >
             <Package className="w-4 h-4" />
             <span>Inventário Geral</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                activeTab === 'inventory'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              {totalProducts}
-            </span>
-            {alertCount > 0 && (
-              <span
-                className="w-2 h-2 rounded-full bg-amber-500"
-                title={`${alertCount} itens com estoque baixo/esgotado`}
-              />
-            )}
           </button>
 
           {/* Tab 2: Ordens de Serviço (O.S.) */}
@@ -80,15 +65,6 @@ export const Navigation: React.FC<NavigationProps> = ({
           >
             <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Ordens de Serviço (O.S.)</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                activeTab === 'work-orders'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              {totalWorkOrders}
-            </span>
           </button>
 
           {/* Tab 3: Histórico de Entradas */}
@@ -104,15 +80,6 @@ export const Navigation: React.FC<NavigationProps> = ({
           >
             <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>Histórico de Entradas</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                activeTab === 'entries'
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              {totalEntries}
-            </span>
           </button>
 
           {/* Tab 4: Histórico de Saídas */}
@@ -128,15 +95,6 @@ export const Navigation: React.FC<NavigationProps> = ({
           >
             <ArrowUpRight className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span>Histórico de Saídas</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                activeTab === 'exits'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              {totalExits}
-            </span>
           </button>
         </div>
       </div>

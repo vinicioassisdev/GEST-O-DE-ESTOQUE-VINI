@@ -195,7 +195,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {filteredOrders.map((wo) => (
             <div
               key={wo.id}

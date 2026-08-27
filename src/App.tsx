@@ -465,7 +465,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 flex-1 w-full">
+      <main className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-6 pb-8 flex-1">
         {isLoading ? (
           <div className="py-24 text-center">
             <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />

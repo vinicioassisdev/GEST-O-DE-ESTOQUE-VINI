@@ -283,38 +283,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </>
               )}
             </button>
-
-            {/* Quick Access Helper */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-400 block mb-2 text-center uppercase tracking-wider">
-                Acessos Padrão do Sistema:
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('admin', 'admin123')}
-                  className="p-3 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-medium text-left border border-purple-200 dark:border-purple-800 transition-colors shadow-xs"
-                >
-                  <div className="font-bold text-xs flex items-center gap-1">
-                    <span>👑 Administrador (ADM)</span>
-                  </div>
-                  <div className="text-[11px] text-purple-600/90 font-mono mt-0.5">admin / admin123</div>
-                  <div className="text-[10px] text-purple-500 mt-1">Acesso completo & cadastros</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('consulta', 'consulta123')}
-                  className="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium text-left border border-slate-300 dark:border-slate-700 transition-colors shadow-xs"
-                >
-                  <div className="font-bold text-xs flex items-center gap-1">
-                    <span>🔍 Consulta</span>
-                  </div>
-                  <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono mt-0.5">consulta / consulta123</div>
-                  <div className="text-[10px] text-slate-500 mt-1">Visualização & leitura</div>
-                </button>
-              </div>
-            </div>
           </form>
         ) : (
           /* TAB 2: REGISTER NEW USER */

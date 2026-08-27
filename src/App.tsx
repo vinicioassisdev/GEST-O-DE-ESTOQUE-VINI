@@ -12,6 +12,7 @@ import { WorkOrderGeneratorModal } from './components/WorkOrderGeneratorModal';
 import { AuditReconcileModal } from './components/AuditReconcileModal';
 import { BackupModal } from './components/BackupModal';
 import { LoginModal } from './components/LoginModal';
+import { InitialLoginView } from './components/InitialLoginView';
 import { UsersManagementModal } from './components/UsersManagementModal';
 import { AreasManagementModal } from './components/AreasManagementModal';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
@@ -466,6 +467,52 @@ export default function App() {
   const exitsCount = useMemo(() => {
     return movements.filter((m) => m.type === 'OUT').length;
   }, [movements]);
+
+  // If user is not authenticated, show the initial login gate tab/view
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+        {/* Toast alert */}
+        {toast && (
+          <div
+            id="app-toast-notification"
+            className="fixed top-6 right-4 z-50 animate-in slide-in-from-top-3 fade-in duration-200"
+          >
+            <div
+              className={`px-4 py-3 rounded-2xl shadow-xl border flex items-center gap-2.5 text-xs font-semibold backdrop-blur-md ${
+                toast.type === 'success'
+                  ? 'bg-emerald-600/95 text-white border-emerald-500 shadow-emerald-900/20'
+                  : toast.type === 'error'
+                  ? 'bg-red-600/95 text-white border-red-500 shadow-red-900/20'
+                  : 'bg-slate-900/95 text-white border-slate-700 shadow-slate-900/20'
+              }`}
+            >
+              {toast.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+              ) : toast.type === 'error' ? (
+                <AlertCircle className="w-4 h-4 text-red-200" />
+              ) : (
+                <Info className="w-4 h-4 text-blue-300" />
+              )}
+              <span>{toast.message}</span>
+              <button
+                type="button"
+                onClick={() => setToast(null)}
+                className="p-1 hover:opacity-70 transition-opacity ml-1"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <InitialLoginView
+          onLoginSuccess={handleLoginSuccess}
+          isOnline={isOnline}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans pb-20 sm:pb-12">

@@ -86,6 +86,177 @@ npm start
 
 ---
 
+## 🗄️ Integração com Banco de Dados Externo
+
+Atualmente o sistema possui persistência local com exportação/importação de backups JSON. Caso deseje conectar a um **Banco de Dados Externo na Nuvem ou On-Premise** (como **PostgreSQL**, **Supabase**, **MySQL** ou **Firebase Firestore**), siga os passos abaixo para cada arquitetura:
+
+---
+
+### Opção 1: PostgreSQL / Supabase / MySQL (Recomendado via Express)
+
+Como a aplicação já possui o backend **`server.ts`** em Express, você pode criar uma camada de persistência com **Prisma ORM** ou **Drizzle ORM**.
+
+#### 1. Instalar as dependências do ORM e Driver
+```bash
+# Exemplo com Prisma e PostgreSQL:
+npm install @prisma/client
+npm install -D prisma
+
+# Ou se preferir usar Drizzle:
+# npm install drizzle-orm pg
+# npm install -D drizzle-kit @types/pg
+```
+
+#### 2. Inicializar o Prisma
+```bash
+npx prisma init
+```
+
+#### 3. Configurar a variável de conexão no arquivo `.env`
+Crie um arquivo `.env` na raiz do projeto:
+```env
+DATABASE_URL="postgresql://usuario:senha@seu-host.com:5432/almoxarifado?schema=public"
+```
+
+#### 4. Definir o Schema dos Modelos no `prisma/schema.prisma`
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  category     String
+  quantity     Float    @default(0)
+  minQuantity  Float    @default(0)
+  unitPrice    Float    @default(0)
+  costPrice    Float    @default(0)
+  unit         String   @default("UN")
+  location     String?
+  supplier     String?
+  barcode      String?
+  equipmentTag String?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model WorkOrder {
+  id              String   @id @default(uuid())
+  osNumber        String   @unique
+  requesterName   String
+  mechanicName    String?
+  serviceType     String
+  priority        String
+  operationalArea String?
+  notes           String?
+  totalCost       Float    @default(0)
+  totalQuantity   Float    @default(0)
+  status          String   @default("ABERTA") // ABERTA, PARCIAL, CONCLUIDA, CANCELADA
+  authorizedBy    String?
+  createdAt       DateTime @default(now())
+  items           WorkOrderItem[]
+}
+
+model WorkOrderItem {
+  id                 String    @id @default(uuid())
+  workOrderId        String
+  workOrder          WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  productId          String
+  productCode        String
+  productName        String
+  quantity           Float
+  dischargedQuantity Float     @default(0)
+  returnedQuantity   Float     @default(0)
+  unitPrice          Float
+  unit               String?
+}
+
+model Movement {
+  id           String   @id @default(uuid())
+  type         String   // ENTRY, EXIT, RECONCILE, RETURN
+  productId    String
+  productCode  String
+  productName  String
+  quantity     Float
+  reason       String
+  date         DateTime @default(now())
+  user         String
+  workOrderId  String?
+  osNumber     String?
+  documentNumber String?
+}
+```
+
+#### 5. Executar as Migrações
+```bash
+npx prisma migrate dev --name init
+```
+
+#### 6. Criar as Rotas de API no `server.ts`
+No arquivo `server.ts`, adicione as rotas REST para conectar o Frontend ao banco:
+```typescript
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+// Listar produtos
+app.get('/api/products', async (req, res) => {
+  const products = await prisma.product.findMany();
+  res.json(products);
+});
+
+// Salvar / atualizar produto
+app.post('/api/products', async (req, res) => {
+  const product = await prisma.product.create({ data: req.body });
+  res.json(product);
+});
+
+// Listar Ordens de Serviço
+app.get('/api/work-orders', async (req, res) => {
+  const orders = await prisma.workOrder.findMany({ include: { items: true } });
+  res.json(orders);
+});
+```
+
+---
+
+### Opção 2: Firebase Firestore (Cloud NoSQL em Tempo Real)
+
+Se preferir um banco NoSQL gerenciado em nuvem sem necessidade de gerenciar servidor:
+
+1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/).
+2. Crie um banco **Cloud Firestore**.
+3. Instale o SDK:
+   ```bash
+   npm install firebase
+   ```
+4. Crie o arquivo `src/lib/firebase.ts`:
+   ```typescript
+   import { initializeApp } from 'firebase/app';
+   import { getFirestore } from 'firebase/firestore';
+
+   const firebaseConfig = {
+     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+     projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+     appId: import.meta.env.VITE_FIREBASE_APP_ID
+   };
+
+   export const app = initializeApp(firebaseConfig);
+   export const db = getFirestore(app);
+   ```
+
+---
+
 ## 📁 Estrutura do Projeto
 
 ```text
